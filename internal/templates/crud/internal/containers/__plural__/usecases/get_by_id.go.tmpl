@@ -1,0 +1,37 @@
+package {%.Plural%}_usecases
+
+import (
+	"context"
+	"uuid"
+
+	{%.Plural%}_entities "{%.Module%}/internal/containers/{%.FolderPlural%}/entities"
+	"{%.Module%}/internal/contracts"
+)
+
+type Get{%.Pascal%}ByIDUseCase struct {
+	Repository contracts.IRepository[{%.Plural%}_entities.{%.Pascal%}, {%.Plural%}_entities.{%.Pascal%}]
+}
+
+func NewGet{%.Pascal%}ByIDUseCase(repository contracts.IRepository[{%.Plural%}_entities.{%.Pascal%}, {%.Plural%}_entities.{%.Pascal%}]) Get{%.Pascal%}ByIDUseCase {
+	return Get{%.Pascal%}ByIDUseCase{
+		Repository: repository,
+	}
+}
+
+type Get{%.Pascal%}ByIDUseCaseInput struct {
+	ID *uuid.UUID
+}
+
+type Get{%.Pascal%}ByIDUseCaseOutput struct {
+	Data {%.Plural%}_entities.{%.Pascal%} `json:"data"`
+}
+
+func (u Get{%.Pascal%}ByIDUseCase) Perform(ctx context.Context, input Get{%.Pascal%}ByIDUseCaseInput) (*Get{%.Pascal%}ByIDUseCaseOutput, error) {
+
+	data, err := u.Repository.GetByID(ctx, input.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Get{%.Pascal%}ByIDUseCaseOutput{Data: data}, nil
+}

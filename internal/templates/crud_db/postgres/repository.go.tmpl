@@ -1,0 +1,240 @@
+package {%.Plural%}_repositories
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+	"uuid"
+
+	{%.Plural%}_entities "{%.Module%}/internal/containers/{%.FolderPlural%}/entities"
+	"{%.Module%}/internal/contracts"
+)
+
+const (
+	columns       = "id, updated_at, created_at, deleted_at"
+	defaultLimit  = 20
+	maxLimit      = 100
+	defaultOrder  = "created_at"
+)
+
+var queryColumns = map[string]bool{
+	"id":         true,
+	"updated_at": true,
+	"created_at": true,
+}
+
+type {%.PascalPlural%}Repository struct {
+	DB *sql.DB
+}
+
+func New{%.PascalPlural%}Repository(pgdb *sql.DB) {%.PascalPlural%}Repository {
+	return {%.PascalPlural%}Repository{
+		DB: pgdb,
+	}
+}
+
+type scanner interface {
+	Scan(dest ...any) error
+}
+
+func scan(row scanner) ({%.Plural%}_entities.{%.Pascal%}, error) {
+
+	var (
+		idStr  string
+		output {%.Plural%}_entities.{%.Pascal%}
+	)
+
+	err := row.Scan(
+		&idStr,
+		&output.UpdatedAt,
+		&output.CreatedAt,
+		&output.DeletedAt,
+	)
+	if err != nil {
+		return {%.Plural%}_entities.{%.Pascal%}{}, err
+	}
+
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return {%.Plural%}_entities.{%.Pascal%}{}, err
+	}
+
+	output.ID = id
+
+	return output, nil
+}
+
+func (r {%.PascalPlural%}Repository) Save(ctx context.Context, input {%.Plural%}_entities.{%.Pascal%}) ({%.Plural%}_entities.{%.Pascal%}, error) {
+
+	const query = `
+		INSERT INTO {%.Plural%} (` + columns + `)
+		VALUES ($1, $2, $3, $4)
+		RETURNING ` + columns
+
+	return scan(r.DB.QueryRowContext(ctx, query, input.ID.String(), input.UpdatedAt, input.CreatedAt, input.DeletedAt))
+}
+
+func (r {%.PascalPlural%}Repository) Exists(ctx context.Context, input {%.Plural%}_entities.{%.Pascal%}) (bool, error) {
+
+	const query = `
+		SELECT EXISTS(
+			SELECT 1 FROM {%.Plural%}
+			WHERE id = $1 AND deleted_at IS NULL
+		)
+	`
+
+	var exists bool
+
+	err := r.DB.QueryRowContext(ctx, query, input.ID.String()).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+
+func (r {%.PascalPlural%}Repository) GetByID(ctx context.Context, id *uuid.UUID) ({%.Plural%}_entities.{%.Pascal%}, error) {
+
+	const query = `
+		SELECT ` + columns + `
+		FROM {%.Plural%}
+		WHERE id = $1 AND deleted_at IS NULL
+	`
+
+	output, err := scan(r.DB.QueryRowContext(ctx, query, id.String()))
+	if errors.Is(err, sql.ErrNoRows) {
+		return {%.Plural%}_entities.{%.Pascal%}{}, errors.New("{%.Singular%} not found")
+	}
+
+	return output, err
+}
+
+func (r {%.PascalPlural%}Repository) List(ctx context.Context) ([]{%.Plural%}_entities.{%.Pascal%}, error) {
+
+	const query = `
+		SELECT ` + columns + `
+		FROM {%.Plural%}
+		WHERE deleted_at IS NULL
+		ORDER BY created_at DESC
+	`
+
+	return r.list(ctx, query)
+}
+
+func (r {%.PascalPlural%}Repository) Query(ctx context.Context, input contracts.QueryInput) ([]{%.Plural%}_entities.{%.Pascal%}, error) {
+
+	where := []string{"deleted_at IS NULL"}
+	var args []any
+
+	for key, value := range input.Filters {
+		if !queryColumns[key] {
+			return nil, fmt.Errorf("invalid filter: %s", key)
+		}
+
+		args = append(args, value)
+		where = append(where, fmt.Sprintf("%s = $%d", key, len(args)))
+	}
+
+	orderBy := defaultOrder
+	if input.OrderBy != "" {
+		if !queryColumns[input.OrderBy] {
+			return nil, fmt.Errorf("invalid order_by: %s", input.OrderBy)
+		}
+		orderBy = input.OrderBy
+	}
+
+	order := "DESC"
+	if strings.EqualFold(input.Order, "asc") {
+		order = "ASC"
+	}
+
+	limit := input.Limit
+	if limit <= 0 {
+		limit = defaultLimit
+	}
+	limit = min(limit, maxLimit)
+
+	offset := max(input.Offset, 0)
+
+	args = append(args, limit, offset)
+
+	query := fmt.Sprintf(`
+		SELECT %s
+		FROM {%.Plural%}
+		WHERE %s
+		ORDER BY %s %s
+		LIMIT $%d OFFSET $%d
+	`, columns, strings.Join(where, " AND "), orderBy, order, len(args)-1, len(args))
+
+	return r.list(ctx, query, args...)
+}
+
+func (r {%.PascalPlural%}Repository) list(ctx context.Context, query string, args ...any) ([]{%.Plural%}_entities.{%.Pascal%}, error) {
+
+	rows, err := r.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	output := make([]{%.Plural%}_entities.{%.Pascal%}, 0)
+
+	for rows.Next() {
+		data, err := scan(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		output = append(output, data)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return output, nil
+}
+
+func (r {%.PascalPlural%}Repository) Update(ctx context.Context, id *uuid.UUID, input {%.Plural%}_entities.{%.Pascal%}) ({%.Plural%}_entities.{%.Pascal%}, error) {
+
+	const query = `
+		UPDATE {%.Plural%}
+		SET updated_at = $2
+		WHERE id = $1 AND deleted_at IS NULL
+		RETURNING ` + columns
+
+	output, err := scan(r.DB.QueryRowContext(ctx, query, id.String(), input.UpdatedAt))
+	if errors.Is(err, sql.ErrNoRows) {
+		return {%.Plural%}_entities.{%.Pascal%}{}, errors.New("{%.Singular%} not found")
+	}
+
+	return output, err
+}
+
+func (r {%.PascalPlural%}Repository) Delete(ctx context.Context, id *uuid.UUID) error {
+
+	const query = `
+		UPDATE {%.Plural%}
+		SET deleted_at = $2
+		WHERE id = $1 AND deleted_at IS NULL
+	`
+
+	result, err := r.DB.ExecContext(ctx, query, id.String(), time.Now())
+	if err != nil {
+		return err
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affected == 0 {
+		return errors.New("{%.Singular%} not found")
+	}
+
+	return nil
+}

@@ -1,0 +1,7 @@
+package contracts
+
+import "context"
+
+type IUseCase[I any, O any] interface {
+	Perform(ctx context.Context, input I) (*O, error)
+}

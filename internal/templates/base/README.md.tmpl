@@ -1,0 +1,19 @@
+# {%.Name%}
+Projeto gerado pelo devx. Veja os apps do projeto com `devx app ls`.
+
+## API (cmd/api)
+```sh
+make run-dev
+devx service add postgres
+devx crud add user
+devx worker add cleanup --interval 30m
+devx view add sveltekit
+```
+Docs da API em http://localhost:8080/docs
+
+## CLI (cmd/cli)
+```sh
+devx command add hello
+make run-cli ARGS="hello"
+make build-cli
+```

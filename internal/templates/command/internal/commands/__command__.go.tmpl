@@ -1,0 +1,17 @@
+package commands
+
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+)
+
+var {%.Camel%}Cmd = &cobra.Command{
+	Use:   "{%.Kebab%}",
+	Short: "{%.Kebab%} command",
+	Run:   {%.Camel%},
+}
+
+func {%.Camel%}(cmd *cobra.Command, args []string) {
+	fmt.Println("{%.Kebab%} called")
+}

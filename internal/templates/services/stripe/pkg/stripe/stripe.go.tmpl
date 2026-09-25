@@ -1,0 +1,10 @@
+package stripe
+
+import (
+	"{%.Module%}/pkg/dotenv"
+	"github.com/stripe/stripe-go/v85"
+)
+
+func NewStripeClient(cfg dotenv.Stripe) *stripe.Client {
+	return stripe.NewClient(cfg.SecretKey)
+}

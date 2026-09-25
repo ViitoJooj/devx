@@ -1,0 +1,23 @@
+package redis
+
+import (
+	"context"
+
+	"{%.Module%}/pkg/dotenv"
+	"github.com/redis/go-redis/v9"
+)
+
+func NewRedisConn(ctx context.Context, cfg dotenv.Redis) (*redis.Client, error) {
+	opts, err := redis.ParseURL(cfg.Uri)
+	if err != nil {
+		return nil, err
+	}
+
+	rdb := redis.NewClient(opts)
+
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		return nil, err
+	}
+
+	return rdb, nil
+}

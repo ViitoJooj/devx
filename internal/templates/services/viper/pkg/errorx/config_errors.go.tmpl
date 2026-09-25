@@ -1,0 +1,14 @@
+package errorx
+
+import (
+	"fmt"
+	"os"
+)
+
+func CannotReadConfig() {
+	fmt.Println("code: cli-00")
+	fmt.Println("error: error on read config.yaml")
+	fmt.Println("error_type: internal error.")
+	fmt.Println("message: run the cli in the folder that has config.yaml")
+	os.Exit(1)
+}

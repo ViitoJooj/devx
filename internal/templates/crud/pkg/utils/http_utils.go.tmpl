@@ -1,0 +1,15 @@
+package utils
+
+import (
+	"errors"
+	"io"
+
+	"github.com/gin-gonic/gin"
+)
+
+func BindBody(c *gin.Context, dest any) error {
+	if err := c.ShouldBindJSON(dest); err != nil && !errors.Is(err, io.EOF) {
+		return err
+	}
+	return nil
+}

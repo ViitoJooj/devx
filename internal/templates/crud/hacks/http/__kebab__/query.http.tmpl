@@ -1,0 +1,12 @@
+@ENDPOINT={{APPLICATION_BACKEND}}/v1/{%.KebabPlural%}
+
+QUERY {{ENDPOINT}}
+Content-Type: application/json
+
+{
+    "filters": {},
+    "limit": 20,
+    "offset": 0,
+    "order_by": "created_at",
+    "order": "desc"
+}

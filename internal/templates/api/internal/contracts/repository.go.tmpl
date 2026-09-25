@@ -1,0 +1,30 @@
+package contracts
+
+import (
+	"context"
+	"uuid"
+)
+
+type IRepository[Manifest any, Status any] interface {
+	Save(ctx context.Context, input Manifest) (Status, error)
+	GetByID(ctx context.Context, id *uuid.UUID) (Status, error)
+	List(ctx context.Context) ([]Status, error)
+	Query(ctx context.Context, input QueryInput) ([]Status, error)
+	Exists(ctx context.Context, input Manifest) (bool, error)
+	Update(ctx context.Context, id *uuid.UUID, input Manifest) (Status, error)
+	Delete(ctx context.Context, id *uuid.UUID) error
+}
+
+type IServerRepository interface {
+	Ping(ctx context.Context) (string, error)
+	GetOpenAPISpec(ctx context.Context) ([]byte, error)
+	GetDocsPage(ctx context.Context) ([]byte, error)
+}
+
+type QueryInput struct {
+	Filters map[string]any `json:"filters"`
+	Limit   int            `json:"limit"`
+	Offset  int            `json:"offset"`
+	OrderBy string         `json:"order_by"`
+	Order   string         `json:"order"`
+}

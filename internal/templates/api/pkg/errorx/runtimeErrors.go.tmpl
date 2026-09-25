@@ -1,0 +1,9 @@
+package errorx
+
+import (
+	"{%.Module%}/pkg/logs"
+)
+
+func Fatal(input error) {
+	logs.FatalFrom(1, input.Error())
+}

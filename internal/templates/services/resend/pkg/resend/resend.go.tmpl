@@ -1,0 +1,35 @@
+package resend
+
+import (
+	"context"
+
+	"{%.Module%}/pkg/dotenv"
+	"github.com/resend/resend-go/v3"
+)
+
+type Client struct {
+	client *resend.Client
+	from   string
+}
+
+func NewResendClient(cfg dotenv.Resend) *Client {
+	return &Client{
+		client: resend.NewClient(cfg.ApiKey),
+		from:   cfg.From,
+	}
+}
+
+func (c *Client) SendEmail(ctx context.Context, to []string, subject, html string) (string, error) {
+
+	sent, err := c.client.Emails.SendWithContext(ctx, &resend.SendEmailRequest{
+		From:    c.from,
+		To:      to,
+		Subject: subject,
+		Html:    html,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return sent.Id, nil
+}

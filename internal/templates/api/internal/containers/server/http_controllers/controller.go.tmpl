@@ -1,0 +1,86 @@
+package server_http_controllers
+
+import (
+	"net/http"
+
+	server_usecases "{%.Module%}/internal/containers/server/usecases"
+	"{%.Module%}/internal/contracts"
+	"{%.Module%}/pkg/utils"
+	"github.com/gin-gonic/gin"
+)
+
+type RegisterServerControllersInput struct {
+	Router         *gin.RouterGroup
+	PingUseCase    contracts.IUseCase[server_usecases.PingUseCaseInput, server_usecases.PingUseCaseOutput]
+	OpenAPIUseCase contracts.IUseCase[server_usecases.OpenAPIUseCaseInput, server_usecases.OpenAPIUseCaseOutput]
+	DocsUseCase    contracts.IUseCase[server_usecases.DocsUseCaseInput, server_usecases.DocsUseCaseOutput]
+}
+
+func RegisterServerControllers(input RegisterServerControllersInput) error {
+
+	err := utils.AssertNotNilParams(
+		map[string]any{
+			"input.Router":         input.Router,
+			"input.PingUseCase":    input.PingUseCase,
+			"input.OpenAPIUseCase": input.OpenAPIUseCase,
+			"input.DocsUseCase":    input.DocsUseCase,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	basePath := "/v1"
+
+	base := input.Router.Group(basePath)
+	{
+		base.Any("/ping", ping(input.PingUseCase))
+		base.GET("/openapi.yaml", openAPISpec(input.OpenAPIUseCase))
+	}
+
+	input.Router.GET("/docs", docs(input.DocsUseCase))
+
+	return nil
+}
+
+func ping(useCase contracts.IUseCase[server_usecases.PingUseCaseInput, server_usecases.PingUseCaseOutput]) func(c *gin.Context) {
+	return func(c *gin.Context) {
+
+		output, err := useCase.Perform(c, server_usecases.PingUseCaseInput{})
+		if err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+
+		c.JSON(http.StatusOK, output)
+	}
+}
+
+func openAPISpec(useCase contracts.IUseCase[server_usecases.OpenAPIUseCaseInput, server_usecases.OpenAPIUseCaseOutput]) func(c *gin.Context) {
+	return func(c *gin.Context) {
+
+		output, err := useCase.Perform(c, server_usecases.OpenAPIUseCaseInput{})
+		if err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+
+		c.Data(http.StatusOK, "application/yaml", output.Spec)
+	}
+}
+
+func docs(useCase contracts.IUseCase[server_usecases.DocsUseCaseInput, server_usecases.DocsUseCaseOutput]) func(c *gin.Context) {
+	return func(c *gin.Context) {
+
+		output, err := useCase.Perform(c, server_usecases.DocsUseCaseInput{})
+		if err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+
+		c.Data(http.StatusOK, "text/html; charset=utf-8", output.Page)
+	}
+}

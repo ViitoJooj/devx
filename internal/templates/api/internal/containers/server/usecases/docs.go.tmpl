@@ -1,0 +1,33 @@
+package server_usecases
+
+import (
+	"context"
+
+	"{%.Module%}/internal/contracts"
+)
+
+type DocsUseCase struct {
+	Repository contracts.IServerRepository
+}
+
+func NewDocsUseCase(repository contracts.IServerRepository) DocsUseCase {
+	return DocsUseCase{
+		Repository: repository,
+	}
+}
+
+type DocsUseCaseInput struct{}
+
+type DocsUseCaseOutput struct {
+	Page []byte
+}
+
+func (u DocsUseCase) Perform(ctx context.Context, _ DocsUseCaseInput) (*DocsUseCaseOutput, error) {
+
+	page, err := u.Repository.GetDocsPage(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DocsUseCaseOutput{Page: page}, nil
+}

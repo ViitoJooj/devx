@@ -1,0 +1,43 @@
+package {%.Plural%}_usecases
+
+import (
+	"context"
+	"uuid"
+
+	{%.Plural%}_entities "{%.Module%}/internal/containers/{%.FolderPlural%}/entities"
+	"{%.Module%}/internal/contracts"
+)
+
+type Upgrade{%.Pascal%}ByIDUseCase struct {
+	Repository contracts.IRepository[{%.Plural%}_entities.{%.Pascal%}, {%.Plural%}_entities.{%.Pascal%}]
+}
+
+func NewUpgrade{%.Pascal%}ByIDUseCase(repository contracts.IRepository[{%.Plural%}_entities.{%.Pascal%}, {%.Plural%}_entities.{%.Pascal%}]) Upgrade{%.Pascal%}ByIDUseCase {
+	return Upgrade{%.Pascal%}ByIDUseCase{
+		Repository: repository,
+	}
+}
+
+type Upgrade{%.Pascal%}ByIDUseCaseInput struct {
+	ID   *uuid.UUID
+	Data {%.Plural%}_entities.{%.Pascal%}
+}
+
+type Upgrade{%.Pascal%}ByIDUseCaseOutput struct {
+	Data {%.Plural%}_entities.{%.Pascal%} `json:"data"`
+}
+
+func (u Upgrade{%.Pascal%}ByIDUseCase) Perform(ctx context.Context, input Upgrade{%.Pascal%}ByIDUseCaseInput) (*Upgrade{%.Pascal%}ByIDUseCaseOutput, error) {
+
+	data, err := {%.Plural%}_entities.New{%.Pascal%}()
+	if err != nil {
+		return nil, err
+	}
+
+	output, err := u.Repository.Update(ctx, input.ID, *data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Upgrade{%.Pascal%}ByIDUseCaseOutput{Data: output}, nil
+}

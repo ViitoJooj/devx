@@ -1,0 +1,34 @@
+package {%.Singular%}
+
+import (
+	"context"
+	"time"
+
+	"{%.Module%}/internal/contracts"
+	"{%.Module%}/pkg/logs"
+)
+
+type {%.Pascal%}Worker struct {
+	opts contracts.WorkerOptions
+}
+
+func New{%.Pascal%}Worker(opts ...contracts.WorkerOption) *{%.Pascal%}Worker {
+	return &{%.Pascal%}Worker{
+		opts: contracts.NewWorkerOptions({%.Interval%}, opts...),
+	}
+}
+
+func (w *{%.Pascal%}Worker) Name() string {
+	return "{%.Singular%}"
+}
+
+func (w *{%.Pascal%}Worker) Interval() time.Duration {
+	return w.opts.Interval
+}
+
+func (w *{%.Pascal%}Worker) Run(ctx context.Context) error {
+
+	logs.Info(ctx, "running")
+
+	return nil
+}

@@ -1,0 +1,39 @@
+package server_repositories
+
+import (
+	"context"
+)
+
+type ServerRepository struct {
+	Spec []byte
+}
+
+func NewServerRepository(spec []byte) ServerRepository {
+	return ServerRepository{
+		Spec: spec,
+	}
+}
+
+func (r ServerRepository) Ping(ctx context.Context) (string, error) {
+	return "pong", nil
+}
+
+func (r ServerRepository) GetOpenAPISpec(ctx context.Context) ([]byte, error) {
+	return r.Spec, nil
+}
+
+func (r ServerRepository) GetDocsPage(ctx context.Context) ([]byte, error) {
+	return []byte(`
+	<!doctype html>
+	<html>
+	<head>
+		<title>API docs</title>
+		<meta charset="utf-8" />
+	</head>
+	<body>
+		<script id="api-reference" data-url="/v1/openapi.yaml"></script>
+		<script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+	</body>
+	</html>
+	`), nil
+}

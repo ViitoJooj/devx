@@ -1,0 +1,43 @@
+package {%.Plural%}_entities
+
+import (
+	"time"
+	"uuid"
+)
+
+type {%.Pascal%} struct {
+	ID        uuid.UUID  `json:"id"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	CreatedAt time.Time  `json:"created_at"`
+	DeletedAt *time.Time `json:"deleted_at"`
+}
+
+func New{%.Pascal%}() (*{%.Pascal%}, error) {
+	now := time.Now()
+	return &{%.Pascal%}{
+		ID:        uuid.NewV7(),
+		UpdatedAt: now,
+		CreatedAt: now,
+		DeletedAt: nil,
+	}, nil
+}
+
+func (e *{%.Pascal%}) Touch() {
+	e.UpdatedAt = time.Now()
+}
+
+func (e *{%.Pascal%}) Get{%.Pascal%}ID() uuid.UUID {
+	return e.ID
+}
+
+func (e *{%.Pascal%}) Get{%.Pascal%}UpdatedAt() *time.Time {
+	return &e.UpdatedAt
+}
+
+func (e *{%.Pascal%}) Get{%.Pascal%}CreatedAt() *time.Time {
+	return &e.CreatedAt
+}
+
+func (e *{%.Pascal%}) Get{%.Pascal%}DeletedAt() *time.Time {
+	return e.DeletedAt
+}

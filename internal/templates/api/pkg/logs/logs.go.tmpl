@@ -1,0 +1,58 @@
+package logs
+
+import (
+	"context"
+	"io"
+	"log"
+	"os"
+	"runtime"
+	"strings"
+)
+
+const (
+	logFile     = "logs.txt"
+	maxLogLines = 1000
+)
+
+func init() {
+	w, err := newRotatingWriter(logFile, maxLogLines)
+	if err != nil {
+		log.Fatalf("[FATAL] [logs.init] %s", err.Error())
+	}
+	log.SetOutput(io.MultiWriter(os.Stdout, w))
+}
+
+func oneLine(msg string) string {
+	msg = strings.ReplaceAll(msg, "\r\n", " ")
+	return strings.ReplaceAll(msg, "\n", " ")
+}
+
+func caller(skip int) string {
+	pc, _, _, ok := runtime.Caller(skip + 1)
+	if !ok {
+		return "unknown"
+	}
+
+	fnDetails := runtime.FuncForPC(pc)
+	if fnDetails == nil {
+		return "unknown"
+	}
+
+	return fnDetails.Name()
+}
+
+func Info(ctx context.Context, msg string) {
+	log.Printf("[INFO] [%s] %s", caller(1), oneLine(msg))
+}
+
+func Error(ctx context.Context, msg string) {
+	log.Printf("[ERROR] [%s] %s", caller(1), oneLine(msg))
+}
+
+func Fatal(ctx context.Context, msg string) {
+	log.Fatalf("[FATAL] [%s] %s", caller(1), oneLine(msg))
+}
+
+func FatalFrom(skip int, msg string) {
+	log.Fatalf("[FATAL] [%s] %s", caller(skip+1), oneLine(msg))
+}

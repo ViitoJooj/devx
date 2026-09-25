@@ -1,0 +1,37 @@
+package {%.Plural%}
+
+import (
+	"context"
+{%- if eq .DB "postgres"%}
+	"database/sql"
+{%- end%}
+
+	{%.Plural%}_http_controllers "{%.Module%}/internal/containers/{%.FolderPlural%}/http_controllers"
+	{%.Plural%}_repositories "{%.Module%}/internal/containers/{%.FolderPlural%}/repositories"
+	{%.Plural%}_usecases "{%.Module%}/internal/containers/{%.FolderPlural%}/usecases"
+	"github.com/gin-gonic/gin"
+)
+
+{%- if eq .DB "postgres"%}
+func Init(ctx context.Context, server *gin.Engine, pgdb *sql.DB) error {
+
+	{%.CamelPlural%}Repository := {%.Plural%}_repositories.New{%.PascalPlural%}Repository(pgdb)
+{%- else%}
+func Init(ctx context.Context, server *gin.Engine) error {
+
+	{%.CamelPlural%}Repository := {%.Plural%}_repositories.New{%.PascalPlural%}Repository()
+{%- end%}
+
+	err := {%.Plural%}_http_controllers.Register{%.PascalPlural%}Controllers({%.Plural%}_http_controllers.Register{%.PascalPlural%}ControllersInput{
+		Router:             &server.RouterGroup,
+		CreateUseCase:      {%.Plural%}_usecases.NewCreate{%.Pascal%}UseCase({%.CamelPlural%}Repository),
+		ListUseCase:        {%.Plural%}_usecases.NewList{%.PascalPlural%}UseCase({%.CamelPlural%}Repository),
+		QueryUseCase:       {%.Plural%}_usecases.NewQuery{%.PascalPlural%}UseCase({%.CamelPlural%}Repository),
+		GetByIdUseCase:     {%.Plural%}_usecases.NewGet{%.Pascal%}ByIDUseCase({%.CamelPlural%}Repository),
+		UpdateByIdUseCase:  {%.Plural%}_usecases.NewUpdate{%.Pascal%}ByIDUseCase({%.CamelPlural%}Repository),
+		UpgradeByIdUseCase: {%.Plural%}_usecases.NewUpgrade{%.Pascal%}ByIDUseCase({%.CamelPlural%}Repository),
+		DeleteByIdUseCase:  {%.Plural%}_usecases.NewDelete{%.Pascal%}ByIDUseCase({%.CamelPlural%}Repository),
+	})
+
+	return err
+}

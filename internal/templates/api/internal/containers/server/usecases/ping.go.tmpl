@@ -1,0 +1,33 @@
+package server_usecases
+
+import (
+	"context"
+
+	"{%.Module%}/internal/contracts"
+)
+
+type PingUseCase struct {
+	Repository contracts.IServerRepository
+}
+
+func NewPingUseCase(repository contracts.IServerRepository) PingUseCase {
+	return PingUseCase{
+		Repository: repository,
+	}
+}
+
+type PingUseCaseInput struct{}
+
+type PingUseCaseOutput struct {
+	Server string `json:"server"`
+}
+
+func (u PingUseCase) Perform(ctx context.Context, _ PingUseCaseInput) (*PingUseCaseOutput, error) {
+
+	pong, err := u.Repository.Ping(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &PingUseCaseOutput{Server: pong}, nil
+}

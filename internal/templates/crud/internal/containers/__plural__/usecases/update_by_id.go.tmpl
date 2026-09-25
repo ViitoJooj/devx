@@ -1,0 +1,45 @@
+package {%.Plural%}_usecases
+
+import (
+	"context"
+	"uuid"
+
+	{%.Plural%}_entities "{%.Module%}/internal/containers/{%.FolderPlural%}/entities"
+	"{%.Module%}/internal/contracts"
+)
+
+type Update{%.Pascal%}ByIDUseCase struct {
+	Repository contracts.IRepository[{%.Plural%}_entities.{%.Pascal%}, {%.Plural%}_entities.{%.Pascal%}]
+}
+
+func NewUpdate{%.Pascal%}ByIDUseCase(repository contracts.IRepository[{%.Plural%}_entities.{%.Pascal%}, {%.Plural%}_entities.{%.Pascal%}]) Update{%.Pascal%}ByIDUseCase {
+	return Update{%.Pascal%}ByIDUseCase{
+		Repository: repository,
+	}
+}
+
+type Update{%.Pascal%}ByIDUseCaseInput struct {
+	ID   *uuid.UUID
+	Data {%.Plural%}_entities.{%.Pascal%}
+}
+
+type Update{%.Pascal%}ByIDUseCaseOutput struct {
+	Data {%.Plural%}_entities.{%.Pascal%} `json:"data"`
+}
+
+func (u Update{%.Pascal%}ByIDUseCase) Perform(ctx context.Context, input Update{%.Pascal%}ByIDUseCaseInput) (*Update{%.Pascal%}ByIDUseCaseOutput, error) {
+
+	current, err := u.Repository.GetByID(ctx, input.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	current.Touch()
+
+	output, err := u.Repository.Update(ctx, input.ID, current)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Update{%.Pascal%}ByIDUseCaseOutput{Data: output}, nil
+}

@@ -1,0 +1,33 @@
+package server_usecases
+
+import (
+	"context"
+
+	"{%.Module%}/internal/contracts"
+)
+
+type OpenAPIUseCase struct {
+	Repository contracts.IServerRepository
+}
+
+func NewOpenAPIUseCase(repository contracts.IServerRepository) OpenAPIUseCase {
+	return OpenAPIUseCase{
+		Repository: repository,
+	}
+}
+
+type OpenAPIUseCaseInput struct{}
+
+type OpenAPIUseCaseOutput struct {
+	Spec []byte
+}
+
+func (u OpenAPIUseCase) Perform(ctx context.Context, _ OpenAPIUseCaseInput) (*OpenAPIUseCaseOutput, error) {
+
+	spec, err := u.Repository.GetOpenAPISpec(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &OpenAPIUseCaseOutput{Spec: spec}, nil
+}

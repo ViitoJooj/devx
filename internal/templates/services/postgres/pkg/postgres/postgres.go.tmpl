@@ -1,0 +1,23 @@
+package postgres
+
+import (
+	"context"
+	"database/sql"
+
+	"{%.Module%}/pkg/dotenv"
+	_ "github.com/lib/pq"
+)
+
+func NewPostgresConn(ctx context.Context, cfg dotenv.PostgreSQL) (*sql.DB, error) {
+
+	pgdb, err := sql.Open("postgres", cfg.Uri)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := pgdb.PingContext(ctx); err != nil {
+		return nil, err
+	}
+
+	return pgdb, nil
+}

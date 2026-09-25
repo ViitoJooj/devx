@@ -1,0 +1,69 @@
+package migration
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"net/url"
+	"os"
+
+	"{%.Module%}/pkg/dotenv"
+	"github.com/golang-migrate/migrate/v4"
+	pgmigrate "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/lib/pq"
+)
+
+func Migrate(ctx context.Context, cfg dotenv.PostgreSQL) error {
+
+	if _, err := os.Stat("migrations"); errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+
+	pgdb, err := sql.Open("postgres", cfg.MigrationUri)
+	if err != nil {
+		return fmt.Errorf("migration conn: %w", err)
+	}
+	defer pgdb.Close()
+
+	driver, err := pgmigrate.WithInstance(pgdb, &pgmigrate.Config{})
+	if err != nil {
+		return fmt.Errorf("migration driver: %w", err)
+	}
+
+	m, err := migrate.NewWithDatabaseInstance("file://migrations", "postgres", driver)
+	if err != nil {
+		return fmt.Errorf("migrator init: %w", err)
+	}
+
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("migrations up: %w", err)
+	}
+
+	return protectMigrations(ctx, pgdb, cfg)
+}
+
+func protectMigrations(ctx context.Context, pgdb *sql.DB, cfg dotenv.PostgreSQL) error {
+
+	app, err := url.Parse(cfg.Uri)
+	if err != nil {
+		return fmt.Errorf("postgres uri: %w", err)
+	}
+
+	owner, err := url.Parse(cfg.MigrationUri)
+	if err != nil {
+		return fmt.Errorf("postgres migration uri: %w", err)
+	}
+
+	if app.User.Username() == "" || app.User.Username() == owner.User.Username() {
+		return nil
+	}
+
+	query := "REVOKE ALL ON TABLE schema_migrations FROM " + pq.QuoteIdentifier(app.User.Username())
+	if _, err := pgdb.ExecContext(ctx, query); err != nil {
+		return fmt.Errorf("protect migrations: %w", err)
+	}
+
+	return nil
+}

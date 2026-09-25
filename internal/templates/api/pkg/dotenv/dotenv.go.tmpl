@@ -1,0 +1,66 @@
+package dotenv
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io/fs"
+	"os"
+
+	"github.com/joho/godotenv"
+)
+
+type Cfg struct {
+	Application Application
+}
+
+type Application struct {
+	Port        string
+	BackendURL  string
+	FrontendURL string
+}
+
+func NewDotenv(ctx context.Context) (*Cfg, error) {
+
+	var output Cfg
+
+	err := godotenv.Load("./.env")
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return nil, errors.New("Error on load .env, Verify path")
+	}
+
+	output = Cfg{
+		Application: Application{
+			Port:        os.Getenv("APPLICATION_PORT"),
+			BackendURL:  os.Getenv("APPLICATION_BACKEND"),
+			FrontendURL: os.Getenv("APPLICATION_FRONTEND"),
+		},
+	}
+
+	if err := validate(output); err != nil {
+		return nil, err
+	}
+
+	return &output, nil
+}
+
+func validate(cfg Cfg) error {
+
+	var erros []string
+
+	if cfg.Application.Port == "" {
+		erros = append(erros, "APPLICATION_PORT")
+	}
+
+	return dotenvNullValue(erros)
+}
+
+func dotenvNullValue(inputs []string) error {
+
+	if inputs != nil {
+		message := fmt.Sprintf("missing vars:\n%v\n", inputs)
+		return errors.New(message)
+	}
+
+	return nil
+}

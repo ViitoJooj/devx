@@ -1,0 +1,41 @@
+package {%.Plural%}_usecases
+
+import (
+	"context"
+
+	{%.Plural%}_entities "{%.Module%}/internal/containers/{%.FolderPlural%}/entities"
+	"{%.Module%}/internal/contracts"
+)
+
+type Create{%.Pascal%}UseCase struct {
+	Repository contracts.IRepository[{%.Plural%}_entities.{%.Pascal%}, {%.Plural%}_entities.{%.Pascal%}]
+}
+
+func NewCreate{%.Pascal%}UseCase(repository contracts.IRepository[{%.Plural%}_entities.{%.Pascal%}, {%.Plural%}_entities.{%.Pascal%}]) Create{%.Pascal%}UseCase {
+	return Create{%.Pascal%}UseCase{
+		Repository: repository,
+	}
+}
+
+type Create{%.Pascal%}UseCaseInput struct {
+	Data {%.Plural%}_entities.{%.Pascal%}
+}
+
+type Create{%.Pascal%}UseCaseOutput struct {
+	Data {%.Plural%}_entities.{%.Pascal%} `json:"data"`
+}
+
+func (u Create{%.Pascal%}UseCase) Perform(ctx context.Context, input Create{%.Pascal%}UseCaseInput) (*Create{%.Pascal%}UseCaseOutput, error) {
+
+	data, err := {%.Plural%}_entities.New{%.Pascal%}()
+	if err != nil {
+		return nil, err
+	}
+
+	output, err := u.Repository.Save(ctx, *data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Create{%.Pascal%}UseCaseOutput{Data: output}, nil
+}

@@ -1,0 +1,36 @@
+package {%.Plural%}_usecases
+
+import (
+	"context"
+
+	{%.Plural%}_entities "{%.Module%}/internal/containers/{%.FolderPlural%}/entities"
+	"{%.Module%}/internal/contracts"
+)
+
+type Query{%.PascalPlural%}UseCase struct {
+	Repository contracts.IRepository[{%.Plural%}_entities.{%.Pascal%}, {%.Plural%}_entities.{%.Pascal%}]
+}
+
+func NewQuery{%.PascalPlural%}UseCase(repository contracts.IRepository[{%.Plural%}_entities.{%.Pascal%}, {%.Plural%}_entities.{%.Pascal%}]) Query{%.PascalPlural%}UseCase {
+	return Query{%.PascalPlural%}UseCase{
+		Repository: repository,
+	}
+}
+
+type Query{%.PascalPlural%}UseCaseInput struct {
+	Data contracts.QueryInput
+}
+
+type Query{%.PascalPlural%}UseCaseOutput struct {
+	Data []{%.Plural%}_entities.{%.Pascal%} `json:"data"`
+}
+
+func (u Query{%.PascalPlural%}UseCase) Perform(ctx context.Context, input Query{%.PascalPlural%}UseCaseInput) (*Query{%.PascalPlural%}UseCaseOutput, error) {
+
+	data, err := u.Repository.Query(ctx, input.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Query{%.PascalPlural%}UseCaseOutput{Data: data}, nil
+}

@@ -1,0 +1,116 @@
+/v1/{%.KebabPlural%}:
+  post:
+    operationId: create{%.Pascal%}
+    tags: [{%.KebabPlural%}]
+    summary: Create {%.Singular%}
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/{%.Pascal%}Input"
+    responses:
+      "201":
+        description: Created
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/{%.Pascal%}Response"
+      "400":
+        $ref: "#/components/responses/Error"
+  get:
+    operationId: list{%.PascalPlural%}
+    tags: [{%.KebabPlural%}]
+    summary: List {%.Plural%}
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/{%.Pascal%}ListResponse"
+      "400":
+        $ref: "#/components/responses/Error"
+  query:
+    operationId: query{%.PascalPlural%}
+    tags: [{%.KebabPlural%}]
+    summary: Query {%.Plural%} with filters, pagination and order in the body
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/QueryInput"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/{%.Pascal%}ListResponse"
+      "400":
+        $ref: "#/components/responses/Error"
+/v1/{%.KebabPlural%}/{id}:
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  get:
+    operationId: get{%.Pascal%}ById
+    tags: [{%.KebabPlural%}]
+    summary: Get {%.Singular%} by id
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/{%.Pascal%}Response"
+      "400":
+        $ref: "#/components/responses/Error"
+  patch:
+    operationId: update{%.Pascal%}ById
+    tags: [{%.KebabPlural%}]
+    summary: Update {%.Singular%} (partial)
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/{%.Pascal%}Input"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/{%.Pascal%}Response"
+      "400":
+        $ref: "#/components/responses/Error"
+  put:
+    operationId: upgrade{%.Pascal%}ById
+    tags: [{%.KebabPlural%}]
+    summary: Upgrade {%.Singular%} (full replace)
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/{%.Pascal%}Input"
+    responses:
+      "200":
+        description: OK
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/{%.Pascal%}Response"
+      "400":
+        $ref: "#/components/responses/Error"
+  delete:
+    operationId: delete{%.Pascal%}ById
+    tags: [{%.KebabPlural%}]
+    summary: Delete {%.Singular%} (soft delete)
+    responses:
+      "204":
+        description: Deleted
+      "400":
+        $ref: "#/components/responses/Error"

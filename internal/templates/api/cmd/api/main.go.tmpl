@@ -1,0 +1,34 @@
+package main
+
+import (
+	"context"
+
+	"{%.Module%}/internal/containers/server"
+	"{%.Module%}/pkg/dotenv"
+	"{%.Module%}/pkg/errorx"
+	"{%.Module%}/pkg/httpx"
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+
+	ctx, cancel := context.WithCancel(context.Background())
+	api := gin.Default()
+
+	api.Use(httpx.ErrorHandler())
+
+	defer cancel()
+
+	cfg, err := dotenv.NewDotenv(ctx)
+	if err != nil {
+		errorx.Fatal(err)
+	}
+
+	if err := server.Init(ctx, api); err != nil {
+		errorx.Fatal(err)
+	}
+
+	if err := api.Run(":" + cfg.Application.Port); err != nil {
+		errorx.Fatal(err)
+	}
+}

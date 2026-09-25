@@ -1,0 +1,34 @@
+package {%.Plural%}_usecases
+
+import (
+	"context"
+
+	{%.Plural%}_entities "{%.Module%}/internal/containers/{%.FolderPlural%}/entities"
+	"{%.Module%}/internal/contracts"
+)
+
+type List{%.PascalPlural%}UseCase struct {
+	Repository contracts.IRepository[{%.Plural%}_entities.{%.Pascal%}, {%.Plural%}_entities.{%.Pascal%}]
+}
+
+func NewList{%.PascalPlural%}UseCase(repository contracts.IRepository[{%.Plural%}_entities.{%.Pascal%}, {%.Plural%}_entities.{%.Pascal%}]) List{%.PascalPlural%}UseCase {
+	return List{%.PascalPlural%}UseCase{
+		Repository: repository,
+	}
+}
+
+type List{%.PascalPlural%}UseCaseInput struct{}
+
+type List{%.PascalPlural%}UseCaseOutput struct {
+	Data []{%.Plural%}_entities.{%.Pascal%} `json:"data"`
+}
+
+func (u List{%.PascalPlural%}UseCase) Perform(ctx context.Context, _ List{%.PascalPlural%}UseCaseInput) (*List{%.PascalPlural%}UseCaseOutput, error) {
+
+	data, err := u.Repository.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &List{%.PascalPlural%}UseCaseOutput{Data: data}, nil
+}

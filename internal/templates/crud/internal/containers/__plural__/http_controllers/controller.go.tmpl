@@ -1,0 +1,209 @@
+package {%.Plural%}_http_controllers
+
+import (
+	"net/http"
+	"uuid"
+
+	{%.Plural%}_usecases "{%.Module%}/internal/containers/{%.FolderPlural%}/usecases"
+	"{%.Module%}/internal/contracts"
+	"{%.Module%}/pkg/utils"
+	"github.com/gin-gonic/gin"
+)
+
+type Register{%.PascalPlural%}ControllersInput struct {
+	Router             *gin.RouterGroup
+	CreateUseCase      contracts.IUseCase[{%.Plural%}_usecases.Create{%.Pascal%}UseCaseInput, {%.Plural%}_usecases.Create{%.Pascal%}UseCaseOutput]
+	ListUseCase        contracts.IUseCase[{%.Plural%}_usecases.List{%.PascalPlural%}UseCaseInput, {%.Plural%}_usecases.List{%.PascalPlural%}UseCaseOutput]
+	QueryUseCase       contracts.IUseCase[{%.Plural%}_usecases.Query{%.PascalPlural%}UseCaseInput, {%.Plural%}_usecases.Query{%.PascalPlural%}UseCaseOutput]
+	GetByIdUseCase     contracts.IUseCase[{%.Plural%}_usecases.Get{%.Pascal%}ByIDUseCaseInput, {%.Plural%}_usecases.Get{%.Pascal%}ByIDUseCaseOutput]
+	UpdateByIdUseCase  contracts.IUseCase[{%.Plural%}_usecases.Update{%.Pascal%}ByIDUseCaseInput, {%.Plural%}_usecases.Update{%.Pascal%}ByIDUseCaseOutput]
+	UpgradeByIdUseCase contracts.IUseCase[{%.Plural%}_usecases.Upgrade{%.Pascal%}ByIDUseCaseInput, {%.Plural%}_usecases.Upgrade{%.Pascal%}ByIDUseCaseOutput]
+	DeleteByIdUseCase  contracts.IUseCase[{%.Plural%}_usecases.Delete{%.Pascal%}ByIDUseCaseInput, {%.Plural%}_usecases.Delete{%.Pascal%}ByIDUseCaseOutput]
+}
+
+func Register{%.PascalPlural%}Controllers(input Register{%.PascalPlural%}ControllersInput) error {
+
+	err := utils.AssertNotNilParams(
+		map[string]any{
+			"input.Router":             input.Router,
+			"input.CreateUseCase":      input.CreateUseCase,
+			"input.ListUseCase":        input.ListUseCase,
+			"input.QueryUseCase":       input.QueryUseCase,
+			"input.GetByIdUseCase":     input.GetByIdUseCase,
+			"input.UpdateByIdUseCase":  input.UpdateByIdUseCase,
+			"input.UpgradeByIdUseCase": input.UpgradeByIdUseCase,
+			"input.DeleteByIdUseCase":  input.DeleteByIdUseCase,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	basePath := "/v1/{%.KebabPlural%}"
+
+	base := input.Router.Group(basePath)
+	{
+		base.POST("", create(input.CreateUseCase))
+		base.GET("", list(input.ListUseCase))
+		base.Handle("QUERY", "", query(input.QueryUseCase))
+
+		byId := base.Group("/:id")
+		{
+			byId.GET("", getByID(input.GetByIdUseCase))
+			byId.PATCH("", updateByID(input.UpdateByIdUseCase))
+			byId.PUT("", upgradeByID(input.UpgradeByIdUseCase))
+			byId.DELETE("", deleteByID(input.DeleteByIdUseCase))
+		}
+	}
+
+	return nil
+}
+
+func create(useCase contracts.IUseCase[{%.Plural%}_usecases.Create{%.Pascal%}UseCaseInput, {%.Plural%}_usecases.Create{%.Pascal%}UseCaseOutput]) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		var input {%.Plural%}_usecases.Create{%.Pascal%}UseCaseInput
+		if err := utils.BindBody(c, &input.Data); err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+
+		output, err := useCase.Perform(c, input)
+		if err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+
+		c.JSON(http.StatusCreated, output)
+	}
+}
+
+func list(useCase contracts.IUseCase[{%.Plural%}_usecases.List{%.PascalPlural%}UseCaseInput, {%.Plural%}_usecases.List{%.PascalPlural%}UseCaseOutput]) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		output, err := useCase.Perform(c, {%.Plural%}_usecases.List{%.PascalPlural%}UseCaseInput{})
+		if err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+
+		c.JSON(http.StatusOK, output)
+	}
+}
+
+func query(useCase contracts.IUseCase[{%.Plural%}_usecases.Query{%.PascalPlural%}UseCaseInput, {%.Plural%}_usecases.Query{%.PascalPlural%}UseCaseOutput]) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		var input {%.Plural%}_usecases.Query{%.PascalPlural%}UseCaseInput
+		if err := utils.BindBody(c, &input.Data); err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+
+		output, err := useCase.Perform(c, input)
+		if err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+
+		c.JSON(http.StatusOK, output)
+	}
+}
+
+func getByID(useCase contracts.IUseCase[{%.Plural%}_usecases.Get{%.Pascal%}ByIDUseCaseInput, {%.Plural%}_usecases.Get{%.Pascal%}ByIDUseCaseOutput]) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		id, err := uuid.Parse(c.Param("id"))
+		if err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+
+		output, err := useCase.Perform(c, {%.Plural%}_usecases.Get{%.Pascal%}ByIDUseCaseInput{ID: &id})
+		if err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+
+		c.JSON(http.StatusOK, output)
+	}
+}
+
+func updateByID(useCase contracts.IUseCase[{%.Plural%}_usecases.Update{%.Pascal%}ByIDUseCaseInput, {%.Plural%}_usecases.Update{%.Pascal%}ByIDUseCaseOutput]) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		id, err := uuid.Parse(c.Param("id"))
+		if err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+
+		var input {%.Plural%}_usecases.Update{%.Pascal%}ByIDUseCaseInput
+		if err := utils.BindBody(c, &input.Data); err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+		input.ID = &id
+
+		output, err := useCase.Perform(c, input)
+		if err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+
+		c.JSON(http.StatusOK, output)
+	}
+}
+
+func upgradeByID(useCase contracts.IUseCase[{%.Plural%}_usecases.Upgrade{%.Pascal%}ByIDUseCaseInput, {%.Plural%}_usecases.Upgrade{%.Pascal%}ByIDUseCaseOutput]) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		id, err := uuid.Parse(c.Param("id"))
+		if err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+
+		var input {%.Plural%}_usecases.Upgrade{%.Pascal%}ByIDUseCaseInput
+		if err := utils.BindBody(c, &input.Data); err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+		input.ID = &id
+
+		output, err := useCase.Perform(c, input)
+		if err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+
+		c.JSON(http.StatusOK, output)
+	}
+}
+
+func deleteByID(useCase contracts.IUseCase[{%.Plural%}_usecases.Delete{%.Pascal%}ByIDUseCaseInput, {%.Plural%}_usecases.Delete{%.Pascal%}ByIDUseCaseOutput]) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		id, err := uuid.Parse(c.Param("id"))
+		if err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+
+		_, err = useCase.Perform(c, {%.Plural%}_usecases.Delete{%.Pascal%}ByIDUseCaseInput{ID: &id})
+		if err != nil {
+			_ = c.Error(err)
+			c.Abort()
+			return
+		}
+
+		c.Status(http.StatusNoContent)
+	}
+}

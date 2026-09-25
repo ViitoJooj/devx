@@ -1,0 +1,30 @@
+package config
+
+import (
+	"{%.Module%}/pkg/errorx"
+	"github.com/spf13/viper"
+)
+
+var Env Viper
+
+type Viper struct {
+	App struct {
+		Name    string `mapstructure:"name"`
+		Version string `mapstructure:"version"`
+	} `mapstructure:"app"`
+}
+
+func NewViper() {
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+
+	if err := viper.ReadInConfig(); err != nil {
+		errorx.CannotReadConfig()
+		return
+	}
+
+	if err := viper.Unmarshal(&Env); err != nil {
+		errorx.CannotReadConfig()
+	}
+}

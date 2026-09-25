@@ -1,0 +1,25 @@
+package server
+
+import (
+	"context"
+
+	"{%.Module%}/docs/openapi"
+	server_http_controllers "{%.Module%}/internal/containers/server/http_controllers"
+	server_repositories "{%.Module%}/internal/containers/server/repositories"
+	server_usecases "{%.Module%}/internal/containers/server/usecases"
+	"github.com/gin-gonic/gin"
+)
+
+func Init(ctx context.Context, server *gin.Engine) error {
+
+	serverRepository := server_repositories.NewServerRepository(openapi.Spec)
+
+	err := server_http_controllers.RegisterServerControllers(server_http_controllers.RegisterServerControllersInput{
+		Router:         &server.RouterGroup,
+		PingUseCase:    server_usecases.NewPingUseCase(serverRepository),
+		OpenAPIUseCase: server_usecases.NewOpenAPIUseCase(serverRepository),
+		DocsUseCase:    server_usecases.NewDocsUseCase(serverRepository),
+	})
+
+	return err
+}

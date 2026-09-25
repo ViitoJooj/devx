@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS {%.Plural%} (
+    id UUID PRIMARY KEY,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    deleted_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS idx_{%.Plural%}_active_created ON {%.Plural%}(created_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_{%.Plural%}_deleted_at ON {%.Plural%}(deleted_at) WHERE deleted_at IS NOT NULL;

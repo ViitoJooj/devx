@@ -1,0 +1,59 @@
+openapi: 3.2.0
+info:
+  title: {%.Name%}
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080
+security: []
+paths:
+  /v1/ping:
+    get:
+      operationId: ping
+      tags: [server]
+      summary: Ping
+      responses:
+        "200":
+          description: Server is up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  server:
+                    type: string
+                    example: pong
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+    QueryInput:
+      type: object
+      properties:
+        filters:
+          type: object
+          additionalProperties: true
+          example: {}
+        limit:
+          type: integer
+          default: 20
+          maximum: 100
+        offset:
+          type: integer
+          default: 0
+        order_by:
+          type: string
+          default: created_at
+        order:
+          type: string
+          enum: [asc, desc]
+          default: desc
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"

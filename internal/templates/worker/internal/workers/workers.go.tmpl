@@ -1,0 +1,47 @@
+package workers
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"{%.Module%}/internal/contracts"
+	"{%.Module%}/pkg/logs"
+)
+
+type Manager struct {
+	workers []contracts.IWorker
+}
+
+func New(workers ...contracts.IWorker) *Manager {
+	return &Manager{workers: workers}
+}
+
+func (m *Manager) Start(ctx context.Context) {
+	for _, w := range m.workers {
+		go m.run(ctx, w)
+	}
+}
+
+func (m *Manager) run(ctx context.Context, w contracts.IWorker) {
+
+	m.exec(ctx, w)
+
+	ticker := time.NewTicker(w.Interval())
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			m.exec(ctx, w)
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (m *Manager) exec(ctx context.Context, w contracts.IWorker) {
+	if err := w.Run(ctx); err != nil {
+		logs.Error(ctx, fmt.Sprintf("%s: %s", w.Name(), err.Error()))
+	}
+}

@@ -1,0 +1,31 @@
+{%.Pascal%}:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    updated_at:
+      type: string
+      format: date-time
+    created_at:
+      type: string
+      format: date-time
+    deleted_at:
+      type: [string, "null"]
+      format: date-time
+{%.Pascal%}Input:
+  type: object
+  description: Fields accepted on create/update/upgrade (add here the fields you add to the entity)
+  properties: {}
+{%.Pascal%}Response:
+  type: object
+  properties:
+    data:
+      $ref: "#/components/schemas/{%.Pascal%}"
+{%.Pascal%}ListResponse:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: "#/components/schemas/{%.Pascal%}"
