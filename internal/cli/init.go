@@ -49,10 +49,6 @@ func initProject(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if count > 1 && (initMCP || initJobs) {
-		errorx.AppsNotCombinable()
-	}
-
 	standalone := count == 1 && !initAPI
 
 	name := args[0]

@@ -1,6 +1,10 @@
 package cli
 
 import (
+	"io/fs"
+	"os"
+	"path/filepath"
+
 	"github.com/ViitoJooj/devx/internal/cli/config"
 	"github.com/ViitoJooj/devx/internal/cli/utils"
 	"github.com/spf13/cobra"
@@ -8,7 +12,7 @@ import (
 
 var appCmd = &cobra.Command{
 	Use:   "app",
-	Short: "Manage the project apps (api in cmd/api, cli in cmd/cli)",
+	Short: "Manage the project apps (cmd/api, cmd/cli, cmd/mcp, cmd/jobs)",
 }
 
 func init() {
@@ -29,14 +33,17 @@ var apps = map[string]app{
 		Name: "cli",
 		Deps: []string{"github.com/spf13/cobra"},
 	},
+	"mcp": {
+		Name: "mcp",
+		Deps: []string{"github.com/modelcontextprotocol/go-sdk"},
+	},
+	"jobs": {
+		Name: "jobs",
+		Deps: []string{"github.com/robfig/cron/v3"},
+	},
 }
 
-// standaloneDeps are the modules the lean layouts import; go mod tidy resolves them, the prefetch only warms the cache.
-var standaloneDeps = map[string][]string{
-	"cli":  {"github.com/spf13/cobra"},
-	"mcp":  {"github.com/modelcontextprotocol/go-sdk"},
-	"jobs": {"github.com/robfig/cron/v3"},
-}
+var appOrder = []string{"api", "cli", "mcp", "jobs"}
 
 // appFetches lists what installing the apps downloads, for Prefetch.
 func appFetches(kinds ...string) []utils.Fetch {
@@ -46,25 +53,24 @@ func appFetches(kinds ...string) []utils.Fetch {
 		for _, dep := range apps[kind].Deps {
 			fetches = append(fetches, utils.Fetch{Path: dep})
 		}
-		for _, dep := range standaloneDeps[kind] {
-			if _, monorepoApp := apps[kind]; !monorepoApp {
-				fetches = append(fetches, utils.Fetch{Path: dep})
-			}
-		}
 	}
 	return fetches
 }
 
-var appOrder = []string{"api", "cli"}
-
 func installApp(root string, data templateData, a app) error {
 
-	_, err := utils.RenderDir(utils.RenderInput{
-		Source:       a.Name,
-		Destination:  root,
-		Data:         data,
-		SkipExisting: true,
-	})
+	var err error
+	switch a.Name {
+	case "mcp", "jobs":
+		err = installLean(root, data, a.Name)
+	default:
+		_, err = utils.RenderDir(utils.RenderInput{
+			Source:       a.Name,
+			Destination:  root,
+			Data:         data,
+			SkipExisting: true,
+		})
+	}
 	if err != nil {
 		return err
 	}
@@ -96,4 +102,53 @@ func installStandalone(root string, data templateData, kind string) error {
 	}
 
 	return syncMakefile(&config.Project{Root: root, Module: data.Module, Name: data.Name})
+}
+
+// installLean adds mcp or jobs to a monorepo: the lean template is rendered aside and given the monorepo layout,
+// so there is a single template per app.
+func installLean(root string, data templateData, kind string) error {
+
+	tmp, err := os.MkdirTemp("", "devx-app-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmp)
+
+	if _, err := utils.RenderDir(utils.RenderInput{Source: "standalone/" + kind, Destination: tmp, Data: data}); err != nil {
+		return err
+	}
+
+	aside := &config.Project{Root: tmp, Module: data.Module, Name: data.Name}
+
+	if kind == "mcp" {
+		err = promoteMCP(aside)
+	} else {
+		err = promoteJobs(aside)
+	}
+	if err != nil {
+		return err
+	}
+
+	return filepath.WalkDir(tmp, func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+
+		rel, err := filepath.Rel(tmp, path)
+		if err != nil {
+			return err
+		}
+
+		dest := filepath.Join(root, rel)
+		if _, err := os.Stat(dest); err == nil {
+			return nil
+		}
+
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		return utils.WriteNewFile(dest, string(content))
+	})
 }

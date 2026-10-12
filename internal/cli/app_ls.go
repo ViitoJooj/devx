@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"slices"
-
 	"github.com/spf13/cobra"
 )
 
@@ -30,12 +28,7 @@ func appLs(cmd *cobra.Command, args []string) {
 
 	project := loadProject()
 
-	names := slices.Clone(appOrder)
-	for _, name := range []string{"mcp", "jobs"} {
-		if project.Has(name) {
-			names = append(names, name)
-		}
-	}
+	names := appOrder
 
 	items := make([]appItem, 0, len(names))
 	var rows [][]string

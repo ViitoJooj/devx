@@ -15,14 +15,14 @@ devx init <project> --cli            # cli enxuta: main.go + cmd/root.go + inter
 devx init <project> --mcp            # servidor mcp enxuto: main.go + cmd/server.go + internal/tools + internal/resources
 devx init <project> --jobs           # runner de jobs enxuto: main.go + cmd/worker.go + internal/jobs + internal/schedules (cron)
 devx init <project> --api --cli      # monorepo: cmd/api e cmd/cli no mesmo módulo, dividindo pkg/
-                                     # mcp e jobs nascem sozinhos; para combinar, crie-os e use `devx app add api|cli`
+                                     # qualquer combinação de --api --cli --mcp --jobs vira monorepo (cmd/<app>)
                                      # --module github.com/ViitoJooj/<project> muda o módulo
 
-devx app add api|cli                 # adiciona a outra parte depois; num projeto enxuto (cli/mcp/jobs) converte antes para o monorepo:
+devx app add api|cli|mcp|jobs       # adiciona a outra parte depois; num projeto enxuto (cli/mcp/jobs) converte antes para o monorepo:
                                      #   cli  -> cmd/cli + internal/commands/root.go (comandos continuam registrados)
                                      #   mcp  -> cmd/mcp + internal/agentics/{server.go,tools,resources}
                                      #   jobs -> cmd/jobs + internal/schedules/run.go
-devx app rm api|cli --sudo [-y]      # remove a parte inteira (migrations ficam; não remove o último app)
+devx app rm api|cli|mcp|jobs --sudo [-y]      # remove a parte inteira (migrations ficam; não remove o último app)
 devx app ls [--json]
 
 devx migrate                         # leva um projeto gerado por um devx antigo para o layout atual (move pastas e reescreve imports)

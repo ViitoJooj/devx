@@ -39,6 +39,8 @@ var appPaths = map[string][]string{
 		"internal/shared/httpx", "internal/shared/logs", "internal/shared/utils", "internal/shared/errorx/runtimeErrors.go",
 		"pkg/database", "pkg/cache", "pkg/rabbitmq", "pkg/resend", "pkg/stripe",
 	},
+	"mcp":  {"cmd/mcp", "internal/agentics"},
+	"jobs": {"cmd/jobs", "internal/jobs", "internal/schedules"},
 	"cli": {
 		"cmd/cli", "internal/commands", "config.yaml", "internal/shared/errorx/config_errors.go",
 	},

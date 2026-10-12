@@ -11,7 +11,7 @@ import (
 
 var appAddCmd = &cobra.Command{
 	Use:       "add <" + strings.Join(appOrder, "|") + ">",
-	Short:     "Add the api or the cli to an existing project",
+	Short:     "Add the api, cli, mcp or jobs to an existing project",
 	Args:      cobra.ExactArgs(1),
 	ValidArgs: appOrder,
 	Run:       appAdd,
