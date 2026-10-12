@@ -26,15 +26,23 @@ func appAdd(cmd *cobra.Command, args []string) {
 		errorx.InvalidName(args[0])
 	}
 
-	if project.Exists("cmd", a.Name, "main.go") {
+	if project.Has(a.Name) {
 		errorx.AppAlreadyExists(a.Name)
+	}
+
+	defer utils.Prefetch(appFetches(a.Name)...)()
+
+	if project.Standalone() {
+		if err := utils.Step("moving to the monorepo layout", func() error { return promote(project) }); err != nil {
+			errorx.CannotGenerate(err)
+		}
 	}
 
 	if err := installApp(project.Root, projectData(project), a); err != nil {
 		errorx.CannotGenerate(err)
 	}
 
-	if err := utils.RunGo(project.Root, "mod", "tidy"); err != nil {
+	if err := utils.Step("go mod tidy", func() error { return utils.RunGo(project.Root, "mod", "tidy") }); err != nil {
 		errorx.CannotRunGo(err)
 	}
 

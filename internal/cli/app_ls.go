@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"slices"
+
 	"github.com/spf13/cobra"
 )
 
@@ -28,11 +30,21 @@ func appLs(cmd *cobra.Command, args []string) {
 
 	project := loadProject()
 
-	items := make([]appItem, 0, len(appOrder))
+	names := slices.Clone(appOrder)
+	for _, name := range []string{"mcp", "jobs"} {
+		if project.Has(name) {
+			names = append(names, name)
+		}
+	}
+
+	items := make([]appItem, 0, len(names))
 	var rows [][]string
 
-	for _, name := range appOrder {
-		item := appItem{Name: name, Added: project.Exists("cmd", name, "main.go"), Path: "cmd/" + name}
+	for _, name := range names {
+		item := appItem{Name: name, Added: project.Has(name), Path: "cmd/" + name}
+		if project.Standalone() {
+			item.Path = "."
+		}
 		items = append(items, item)
 
 		status := "available"

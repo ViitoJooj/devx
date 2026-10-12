@@ -40,13 +40,13 @@ func crudAdd(cmd *cobra.Command, args []string) {
 		errorx.InvalidName(args[0])
 	}
 
-	if project.Exists("internal", "containers", names.FolderPlural) {
+	if project.Exists("internal", "restful", names.FolderPlural) {
 		errorx.ContainerAlreadyExists(names.FolderPlural)
 	}
 
 	db := chooseDatabase(project, crudAddDB)
 
-	if db == "postgres" && !project.Exists("pkg", "postgres") {
+	if db == "postgres" && !project.Exists("pkg", "database", "postgres") {
 		fmt.Println("adding postgres")
 		if err := addService(project, services["postgres"]); err != nil {
 			errorx.CannotGenerate(err)
@@ -97,7 +97,7 @@ func crudAdd(cmd *cobra.Command, args []string) {
 		errorx.CannotGenerate(err)
 	}
 
-	if err := utils.RunGo(project.Root, "mod", "tidy"); err != nil {
+	if err := utils.Step("go mod tidy", func() error { return utils.RunGo(project.Root, "mod", "tidy") }); err != nil {
 		errorx.CannotRunGo(err)
 	}
 
@@ -128,7 +128,7 @@ func addContainerToMain(project *config.Project, names utils.Names, db string) e
 }
 
 func containerImport(project *config.Project, names utils.Names) string {
-	return names.Plural + ` "` + project.Module + "/internal/containers/" + names.FolderPlural + `"`
+	return names.Plural + ` "` + project.Module + "/internal/restful/" + names.FolderPlural + `"`
 }
 
 func containerInit(names utils.Names, db string) string {

@@ -41,8 +41,8 @@ func LoadProject() (*Project, error) {
 		Name:   filepath.Base(module),
 	}
 
-	if !project.HasAPI() && !project.HasCLI() {
-		return nil, errors.New("no cmd/api or cmd/cli")
+	if !project.HasAPI() && !project.HasCLI() && !project.HasMCP() && !project.HasJobs() {
+		return nil, errors.New("no api, cli, mcp or jobs app")
 	}
 
 	return project, nil
@@ -52,8 +52,36 @@ func (p *Project) HasAPI() bool {
 	return p.Exists("cmd", "api", "main.go")
 }
 
+// Standalone is the lean layout of a single app: main.go in the root, cmd/ and internal/ with no app folders.
+func (p *Project) Standalone() bool {
+	return p.Exists("main.go")
+}
+
 func (p *Project) HasCLI() bool {
-	return p.Exists("cmd", "cli", "main.go")
+	return p.Exists("cmd", "cli", "main.go") || (p.Standalone() && p.Exists("cmd", "root.go"))
+}
+
+func (p *Project) HasMCP() bool {
+	return p.Exists("cmd", "mcp", "main.go") || (p.Standalone() && p.Exists("cmd", "server.go"))
+}
+
+func (p *Project) HasJobs() bool {
+	return p.Exists("cmd", "jobs", "main.go") || (p.Standalone() && p.Exists("cmd", "worker.go"))
+}
+
+// Has reports whether the app (api, cli, mcp or jobs) is in the project, in any layout.
+func (p *Project) Has(app string) bool {
+	switch app {
+	case "api":
+		return p.HasAPI()
+	case "cli":
+		return p.HasCLI()
+	case "mcp":
+		return p.HasMCP()
+	case "jobs":
+		return p.HasJobs()
+	}
+	return false
 }
 
 func (p *Project) Path(parts ...string) string {

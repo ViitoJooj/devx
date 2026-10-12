@@ -27,7 +27,7 @@ var (
 	commandShort = regexp.MustCompile(`Short:\s*"([^"]*)"`)
 )
 
-var reservedCommands = []string{"root", "init", "main", "execute", "help", "completion", "version"}
+var reservedCommands = []string{"root", "init", "main", "execute", "help", "completion", "version", "register"}
 
 func reservedCommand(names utils.Names) bool {
 	return slices.Contains(reservedCommands, names.Singular) || token.IsKeyword(names.Camel)
@@ -54,7 +54,7 @@ func commandsIn(project *config.Project) []commandItem {
 
 	var output []commandItem
 	for _, file := range files {
-		if filepath.Base(file) == "root.go" {
+		if base := filepath.Base(file); base == "root.go" || base == "register.go" {
 			continue
 		}
 
@@ -82,8 +82,45 @@ func commandsIn(project *config.Project) []commandItem {
 	return output
 }
 
+// rootFile is where commands are registered: root.go in the monorepo, register.go in the lean layout.
 func rootFile(project *config.Project) string {
+	if project.Standalone() {
+		return project.Path("internal", "commands", "register.go")
+	}
 	return project.Path("internal", "commands", "root.go")
+}
+
+// registerCall is the AddCommand call that holds the commands, on the root var of the file.
+func registerCall(project *config.Project) string {
+	if project.Standalone() {
+		return "root.AddCommand"
+	}
+	return "rootCmd.AddCommand"
+}
+
+// registerAnchor is where the first AddCommand call goes: before the root.Execute in the monorepo, at the end of Register in the lean layout.
+func registerAnchor(project *config.Project) utils.Anchor {
+	if !project.Standalone() {
+		return beforeStmtAnchor("Execute", "if err := rootCmd.Execute()")
+	}
+
+	return func(g *utils.GoFile) (int, string, error) {
+		fn := g.Func("Register")
+		if fn == nil || fn.Body == nil {
+			return 0, "", anchorError(g, "func Register")
+		}
+
+		line := g.Line(fn.Body.Rbrace)
+		return line, g.IndentOf(line) + "\t", nil
+	}
+}
+
+// registerFunc is the function that holds the AddCommand call.
+func registerFunc(project *config.Project) string {
+	if project.Standalone() {
+		return "Register"
+	}
+	return "Execute"
 }
 
 func rootContains(project *config.Project, text string) bool {

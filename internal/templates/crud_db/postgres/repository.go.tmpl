@@ -9,22 +9,9 @@ import (
 	"time"
 	"uuid"
 
-	{%.Plural%}_entities "{%.Module%}/internal/containers/{%.FolderPlural%}/entities"
+	{%.Plural%}_entities "{%.Module%}/internal/restful/{%.FolderPlural%}/entities"
 	"{%.Module%}/internal/contracts"
 )
-
-const (
-	columns       = "id, updated_at, created_at, deleted_at"
-	defaultLimit  = 20
-	maxLimit      = 100
-	defaultOrder  = "created_at"
-)
-
-var queryColumns = map[string]bool{
-	"id":         true,
-	"updated_at": true,
-	"created_at": true,
-}
 
 type {%.PascalPlural%}Repository struct {
 	DB *sql.DB
@@ -36,45 +23,19 @@ func New{%.PascalPlural%}Repository(pgdb *sql.DB) {%.PascalPlural%}Repository {
 	}
 }
 
-type scanner interface {
-	Scan(dest ...any) error
-}
-
-func scan(row scanner) ({%.Plural%}_entities.{%.Pascal%}, error) {
-
-	var (
-		idStr  string
-		output {%.Plural%}_entities.{%.Pascal%}
-	)
-
-	err := row.Scan(
-		&idStr,
-		&output.UpdatedAt,
-		&output.CreatedAt,
-		&output.DeletedAt,
-	)
-	if err != nil {
-		return {%.Plural%}_entities.{%.Pascal%}{}, err
-	}
-
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return {%.Plural%}_entities.{%.Pascal%}{}, err
-	}
-
-	output.ID = id
-
-	return output, nil
-}
-
 func (r {%.PascalPlural%}Repository) Save(ctx context.Context, input {%.Plural%}_entities.{%.Pascal%}) ({%.Plural%}_entities.{%.Pascal%}, error) {
 
 	const query = `
-		INSERT INTO {%.Plural%} (` + columns + `)
+		INSERT INTO {%.Plural%} (id, updated_at, created_at, deleted_at)
 		VALUES ($1, $2, $3, $4)
-		RETURNING ` + columns
+	`
 
-	return scan(r.DB.QueryRowContext(ctx, query, input.ID.String(), input.UpdatedAt, input.CreatedAt, input.DeletedAt))
+	_, err := r.DB.ExecContext(ctx, query, input.ID.String(), input.UpdatedAt, input.CreatedAt, input.DeletedAt)
+	if err != nil {
+		return {%.Plural%}_entities.{%.Pascal%}{}, err
+	}
+
+	return input, nil
 }
 
 func (r {%.PascalPlural%}Repository) Exists(ctx context.Context, input {%.Plural%}_entities.{%.Pascal%}) (bool, error) {
@@ -99,32 +60,79 @@ func (r {%.PascalPlural%}Repository) Exists(ctx context.Context, input {%.Plural
 func (r {%.PascalPlural%}Repository) GetByID(ctx context.Context, id *uuid.UUID) ({%.Plural%}_entities.{%.Pascal%}, error) {
 
 	const query = `
-		SELECT ` + columns + `
+		SELECT updated_at, created_at, deleted_at
 		FROM {%.Plural%}
 		WHERE id = $1 AND deleted_at IS NULL
 	`
 
-	output, err := scan(r.DB.QueryRowContext(ctx, query, id.String()))
+	output := {%.Plural%}_entities.{%.Pascal%}{ID: *id}
+
+	err := r.DB.QueryRowContext(ctx, query, id.String()).Scan(&output.UpdatedAt, &output.CreatedAt, &output.DeletedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return {%.Plural%}_entities.{%.Pascal%}{}, errors.New("{%.Singular%} not found")
 	}
+	if err != nil {
+		return {%.Plural%}_entities.{%.Pascal%}{}, err
+	}
 
-	return output, err
+	return output, nil
 }
 
 func (r {%.PascalPlural%}Repository) List(ctx context.Context) ([]{%.Plural%}_entities.{%.Pascal%}, error) {
 
 	const query = `
-		SELECT ` + columns + `
+		SELECT id, updated_at, created_at, deleted_at
 		FROM {%.Plural%}
 		WHERE deleted_at IS NULL
 		ORDER BY created_at DESC
 	`
 
-	return r.list(ctx, query)
+	rows, err := r.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	output := make([]{%.Plural%}_entities.{%.Pascal%}, 0)
+
+	for rows.Next() {
+		var (
+			idStr string
+			item  {%.Plural%}_entities.{%.Pascal%}
+		)
+
+		if err := rows.Scan(&idStr, &item.UpdatedAt, &item.CreatedAt, &item.DeletedAt); err != nil {
+			return nil, err
+		}
+
+		item.ID, err = uuid.Parse(idStr)
+		if err != nil {
+			return nil, err
+		}
+
+		output = append(output, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return output, nil
 }
 
 func (r {%.PascalPlural%}Repository) Query(ctx context.Context, input contracts.QueryInput) ([]{%.Plural%}_entities.{%.Pascal%}, error) {
+
+	const (
+		defaultLimit = 20
+		maxLimit     = 100
+		defaultOrder = "created_at"
+	)
+
+	queryColumns := map[string]bool{
+		"id":         true,
+		"updated_at": true,
+		"created_at": true,
+	}
 
 	where := []string{"deleted_at IS NULL"}
 	var args []any
@@ -162,17 +170,12 @@ func (r {%.PascalPlural%}Repository) Query(ctx context.Context, input contracts.
 	args = append(args, limit, offset)
 
 	query := fmt.Sprintf(`
-		SELECT %s
+		SELECT id, updated_at, created_at, deleted_at
 		FROM {%.Plural%}
 		WHERE %s
 		ORDER BY %s %s
 		LIMIT $%d OFFSET $%d
-	`, columns, strings.Join(where, " AND "), orderBy, order, len(args)-1, len(args))
-
-	return r.list(ctx, query, args...)
-}
-
-func (r {%.PascalPlural%}Repository) list(ctx context.Context, query string, args ...any) ([]{%.Plural%}_entities.{%.Pascal%}, error) {
+	`, strings.Join(where, " AND "), orderBy, order, len(args)-1, len(args))
 
 	rows, err := r.DB.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -183,12 +186,21 @@ func (r {%.PascalPlural%}Repository) list(ctx context.Context, query string, arg
 	output := make([]{%.Plural%}_entities.{%.Pascal%}, 0)
 
 	for rows.Next() {
-		data, err := scan(rows)
+		var (
+			idStr string
+			item  {%.Plural%}_entities.{%.Pascal%}
+		)
+
+		if err := rows.Scan(&idStr, &item.UpdatedAt, &item.CreatedAt, &item.DeletedAt); err != nil {
+			return nil, err
+		}
+
+		item.ID, err = uuid.Parse(idStr)
 		if err != nil {
 			return nil, err
 		}
 
-		output = append(output, data)
+		output = append(output, item)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -204,14 +216,20 @@ func (r {%.PascalPlural%}Repository) Update(ctx context.Context, id *uuid.UUID, 
 		UPDATE {%.Plural%}
 		SET updated_at = $2
 		WHERE id = $1 AND deleted_at IS NULL
-		RETURNING ` + columns
+		RETURNING updated_at, created_at, deleted_at
+	`
 
-	output, err := scan(r.DB.QueryRowContext(ctx, query, id.String(), input.UpdatedAt))
+	output := {%.Plural%}_entities.{%.Pascal%}{ID: *id}
+
+	err := r.DB.QueryRowContext(ctx, query, id.String(), input.UpdatedAt).Scan(&output.UpdatedAt, &output.CreatedAt, &output.DeletedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return {%.Plural%}_entities.{%.Pascal%}{}, errors.New("{%.Singular%} not found")
 	}
+	if err != nil {
+		return {%.Plural%}_entities.{%.Pascal%}{}, err
+	}
 
-	return output, err
+	return output, nil
 }
 
 func (r {%.PascalPlural%}Repository) Delete(ctx context.Context, id *uuid.UUID) error {

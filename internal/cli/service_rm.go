@@ -63,7 +63,7 @@ func serviceRm(cmd *cobra.Command, args []string) {
 		fmt.Println(name + " removed")
 	}
 
-	if err := utils.RunGo(project.Root, "mod", "tidy"); err != nil {
+	if err := utils.Step("go mod tidy", func() error { return utils.RunGo(project.Root, "mod", "tidy") }); err != nil {
 		errorx.CannotRunGo(err)
 	}
 }
@@ -114,7 +114,7 @@ func removeService(project *config.Project, svc service) error {
 			}
 		}
 
-		dotenv := project.Path("pkg", "dotenv", "dotenv.go")
+		dotenv := project.Path("internal", "config", "config.go")
 		for _, snippet := range []string{svc.CfgValidate, svc.CfgValue, svc.CfgType, svc.CfgField} {
 			if err := utils.RemoveSnippet(dotenv, snippet); err != nil {
 				return err

@@ -33,14 +33,14 @@ func init() {
 
 var appPaths = map[string][]string{
 	"api": {
-		"cmd/api", "internal/containers", "internal/contracts", "internal/workers",
-		"docs/openapi", "hacks", "infra", "www",
+		"cmd/api", "internal/restful", "internal/contracts", "internal/workers", "internal/config",
+		"docs/openapi", "hacks/http", "infra", "www",
 		".air.toml", ".env", ".env.example", "Dockerfile", ".dockerignore",
-		"pkg/dotenv", "pkg/httpx", "pkg/logs", "pkg/utils", "pkg/errorx/runtimeErrors.go",
-		"pkg/postgres", "pkg/migration", "pkg/redis", "pkg/rabbitmq", "pkg/resend", "pkg/stripe",
+		"internal/shared/httpx", "internal/shared/logs", "internal/shared/utils", "internal/shared/errorx/runtimeErrors.go",
+		"pkg/database", "pkg/cache", "pkg/rabbitmq", "pkg/resend", "pkg/stripe",
 	},
 	"cli": {
-		"cmd/cli", "internal/commands", "config.yaml", "pkg/errorx/config_errors.go",
+		"cmd/cli", "internal/commands", "config.yaml", "internal/shared/errorx/config_errors.go",
 	},
 }
 
@@ -53,7 +53,7 @@ func appRm(cmd *cobra.Command, args []string) {
 		errorx.InvalidName(args[0])
 	}
 
-	if !project.Exists("cmd", a.Name, "main.go") {
+	if !project.Has(a.Name) {
 		errorx.MissingApp(a.Name)
 	}
 
@@ -61,7 +61,7 @@ func appRm(cmd *cobra.Command, args []string) {
 		errorx.SudoRequired("devx app rm " + a.Name)
 	}
 
-	if !project.HasAPI() || !project.HasCLI() {
+	if project.Standalone() || countApps(project) < 2 {
 		errorx.LastApp(a.Name)
 	}
 
@@ -71,7 +71,7 @@ func appRm(cmd *cobra.Command, args []string) {
 		errorx.CannotGenerate(err)
 	}
 
-	if err := utils.RunGo(project.Root, "mod", "tidy"); err != nil {
+	if err := utils.Step("go mod tidy", func() error { return utils.RunGo(project.Root, "mod", "tidy") }); err != nil {
 		errorx.CannotRunGo(err)
 	}
 
@@ -94,4 +94,15 @@ func removeApp(project *config.Project, a app) error {
 	}
 
 	return syncMakefile(project)
+}
+
+func countApps(project *config.Project) int {
+
+	count := 0
+	for _, name := range []string{"api", "cli", "mcp", "jobs"} {
+		if project.Has(name) {
+			count++
+		}
+	}
+	return count
 }

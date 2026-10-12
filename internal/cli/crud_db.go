@@ -83,7 +83,7 @@ func chooseDatabase(project *config.Project, flag string) string {
 		return flag
 	}
 
-	if project.Exists("pkg", "postgres") {
+	if project.Exists("pkg", "database", "postgres") {
 		return "postgres"
 	}
 
@@ -110,7 +110,7 @@ func prepareDatabase(project *config.Project, names utils.Names, db string) erro
 		return nil
 	}
 
-	if !project.Exists("pkg", "postgres") {
+	if !project.Exists("pkg", "database", "postgres") {
 		if err := addService(project, services["postgres"]); err != nil {
 			return err
 		}
@@ -131,8 +131,8 @@ func renderCrudDB(project *config.Project, names utils.Names, db string, overwri
 		template string
 		dest     []string
 	}{
-		{"crud_db/" + db + "/repository.go.tmpl", []string{"internal", "containers", names.FolderPlural, "repositories", "repository.go"}},
-		{"crud/internal/containers/__plural__/initializr.go.tmpl", []string{"internal", "containers", names.FolderPlural, "initializr.go"}},
+		{"crud_db/" + db + "/repository.go.tmpl", []string{"internal", "restful", names.FolderPlural, "repositories", "repository.go"}},
+		{"crud/internal/restful/__plural__/initializr.go.tmpl", []string{"internal", "restful", names.FolderPlural, "initializr.go"}},
 	}
 
 	for _, file := range files {
@@ -209,7 +209,7 @@ func hasMigration(project *config.Project, names utils.Names) bool {
 
 func crudDatabase(project *config.Project, folder string) string {
 
-	data, err := os.ReadFile(project.Path("internal", "containers", folder, "repositories", "repository.go"))
+	data, err := os.ReadFile(project.Path("internal", "restful", folder, "repositories", "repository.go"))
 	if err == nil && strings.Contains(string(data), `"database/sql"`) {
 		return "postgres"
 	}

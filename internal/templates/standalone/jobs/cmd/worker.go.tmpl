@@ -1,0 +1,29 @@
+package cmd
+
+import (
+	"fmt"
+	"os"
+	"os/signal"
+
+	"{%.Module%}/internal/schedules"
+	"github.com/robfig/cron/v3"
+)
+
+// Execute runs the scheduled jobs until the process is interrupted.
+func Execute() {
+
+	runner := cron.New()
+
+	if err := schedules.Register(runner); err != nil {
+		fmt.Fprintf(os.Stderr, "Oops. An error while scheduling {%.Name%} jobs '%s'\n", err)
+		os.Exit(1)
+	}
+
+	runner.Start()
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
+	<-stop
+
+	<-runner.Stop().Done()
+}

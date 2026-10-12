@@ -45,7 +45,7 @@ func commandRm(cmd *cobra.Command, args []string) {
 	}
 
 	if len(commandsIn(project)) == 0 {
-		if err := utils.RemoveGoStmt(root, "Execute", "rootCmd.AddCommand("); err != nil {
+		if err := utils.RemoveGoStmt(root, registerFunc(project), registerCall(project)+"("); err != nil {
 			errorx.CannotGenerate(err)
 		}
 	}

@@ -96,7 +96,7 @@ func viewAdd(cmd *cobra.Command, args []string) {
 		errorx.CannotGenerate(err)
 	}
 
-	if err := utils.RunGo(project.Root, "mod", "tidy"); err != nil {
+	if err := utils.Step("go mod tidy", func() error { return utils.RunGo(project.Root, "mod", "tidy") }); err != nil {
 		errorx.CannotRunGo(err)
 	}
 

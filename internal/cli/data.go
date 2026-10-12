@@ -7,13 +7,18 @@ import (
 )
 
 type templateData struct {
-	Module    string
-	Name      string
-	Migration string
-	Port      string
-	Interval  string
-	GoVersion string
-	DB        string
+	Module     string
+	Name       string
+	Migration  string
+	Port       string
+	Interval   string
+	GoVersion  string
+	DB         string
+	Standalone bool
+	API        bool
+	CLI        bool
+	MCP        bool
+	Jobs       bool
 	utils.Names
 }
 
@@ -22,6 +27,11 @@ func loadProject() *config.Project {
 	if err != nil {
 		errorx.NotInProject()
 	}
+
+	if isLegacyLayout(project) {
+		errorx.LegacyLayout()
+	}
+
 	return project
 }
 

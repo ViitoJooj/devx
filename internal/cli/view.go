@@ -23,13 +23,13 @@ const corsSnippet = `api.Use(httpx.Cors(cfg.Application.FrontendURL))
 
 func addCors(project *config.Project) error {
 
-	if project.Exists("pkg", "httpx", "cors.go") {
+	if project.Exists("internal", "shared", "httpx", "cors.go") {
 		return nil
 	}
 
 	_, err := utils.RenderDir(utils.RenderInput{
 		Source:       "views",
-		Destination:  project.Path("pkg", "httpx"),
+		Destination:  project.Path("internal", "shared", "httpx"),
 		Data:         projectData(project),
 		SkipExisting: true,
 	})
@@ -50,7 +50,7 @@ func removeCors(project *config.Project) error {
 		return err
 	}
 
-	if err := os.Remove(project.Path("pkg", "httpx", "cors.go")); err != nil && !os.IsNotExist(err) {
+	if err := os.Remove(project.Path("internal", "shared", "httpx", "cors.go")); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 

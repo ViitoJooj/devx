@@ -11,13 +11,21 @@ go build -o $(go env GOPATH)/bin/devx ./cmd
 ```sh
 devx init <project>                  # api (gin, padrão noxacloud) em cmd/api (padrão)
 devx init <project> --api            # o mesmo, explícito
-devx init <project> --cli            # cli (cobra) em cmd/cli, comandos em internal/commands; config.yaml via `service add viper`
-devx init <project> --api --cli      # os dois no mesmo módulo, dividindo pkg/
+devx init <project> --cli            # cli enxuta: main.go + cmd/root.go + internal/commands + internal/core
+devx init <project> --mcp            # servidor mcp enxuto: main.go + cmd/server.go + internal/tools + internal/resources
+devx init <project> --jobs           # runner de jobs enxuto: main.go + cmd/worker.go + internal/jobs + internal/schedules (cron)
+devx init <project> --api --cli      # monorepo: cmd/api e cmd/cli no mesmo módulo, dividindo pkg/
+                                     # mcp e jobs nascem sozinhos; para combinar, crie-os e use `devx app add api|cli`
                                      # --module github.com/ViitoJooj/<project> muda o módulo
 
-devx app add api|cli                 # adiciona a outra parte depois
+devx app add api|cli                 # adiciona a outra parte depois; num projeto enxuto (cli/mcp/jobs) converte antes para o monorepo:
+                                     #   cli  -> cmd/cli + internal/commands/root.go (comandos continuam registrados)
+                                     #   mcp  -> cmd/mcp + internal/agentics/{server.go,tools,resources}
+                                     #   jobs -> cmd/jobs + internal/schedules/run.go
 devx app rm api|cli --sudo [-y]      # remove a parte inteira (migrations ficam; não remove o último app)
 devx app ls [--json]
+
+devx migrate                         # leva um projeto gerado por um devx antigo para o layout atual (move pastas e reescreve imports)
 
 devx command add get-jobs            # internal/commands/get_jobs.go registrado no root
 devx command rm get-jobs [-y]
@@ -45,6 +53,13 @@ devx view rm sveltekit [-y]
 devx view ls [--json]
 ```
 
+- Layout da api: `cmd/api`, `internal/restful` (um pacote por crud + `server`), `internal/contracts`, `internal/config`
+  (`config.New`), `internal/shared/{errorx,httpx,logs,utils}`, `internal/workers`, e os drivers em `pkg/database/postgres`
+  (+ `migration`), `pkg/cache/redis`, `pkg/rabbitmq`, `pkg/resend`, `pkg/stripe`. Projetos antigos (`internal/containers`,
+  `pkg/dotenv`...) recebem um aviso nos comandos e migram com `devx migrate`.
+- O make fica em `hacks/make/`: o `makefile` só tem os `include` e o `info` (edite à vontade),
+  `env.mk` detecta OS e docker/podman (`$(COMPOSE)`), `dev.mk` e `db.mk` (sudo-clean) são gerados pelo devx.
+  Projetos antigos migram sozinhos no próximo `service add`/`app add`; regras escritas à mão ficam no `makefile`.
 - Nada é criado antes de ser usado: `migrations/` nasce no primeiro `crud add`,
   `internal/workers` e `workers.New(...)` no primeiro `worker add`, `rootCmd.AddCommand(...)` no primeiro `command add`,
   o compose no primeiro serviço com container; e somem quando o último é removido.

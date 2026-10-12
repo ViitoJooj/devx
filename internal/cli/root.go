@@ -13,7 +13,7 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() {
-	rootCmd.AddCommand(initCmd, appCmd, serviceCmd, crudCmd, workerCmd, viewCmd, commandCmd)
+	rootCmd.AddCommand(initCmd, appCmd, serviceCmd, crudCmd, workerCmd, viewCmd, commandCmd, migrateCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Oops. An error while executing devx '%s'\n", err)

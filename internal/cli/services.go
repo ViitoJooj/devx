@@ -61,7 +61,7 @@ if cfg.PostgreSQL.MigrationUri == "" {
 	erros = append(erros, "POSTGRES_MIGRATION_URI")
 }
 `,
-		Imports: []string{`"{%.Module%}/pkg/postgres"`, `"{%.Module%}/pkg/migration"`},
+		Imports: []string{`"{%.Module%}/pkg/database/postgres"`, `"{%.Module%}/pkg/database/postgres/migration"`},
 		Conn: `if err := migration.Migrate(ctx, cfg.PostgreSQL); err != nil {
 	errorx.Fatal(err)
 }
@@ -101,7 +101,7 @@ defer pgdb.Close()
 fi; \
 echo "limpando banco de dados..."; \
 printf '%s\n' "SELECT format('TRUNCATE TABLE %I RESTART IDENTITY CASCADE', tablename) FROM pg_tables WHERE schemaname = current_schema() AND tablename <> 'schema_migrations' \gexec" | \
-sudo docker compose -f infra/compose/docker-compose.yaml --env-file .env exec -T postgres \
+sudo $(COMPOSE) exec -T postgres \
 	sh -c 'psql -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"'; \`,
 		},
 	},
@@ -126,7 +126,7 @@ REDIS_PASSWORD=redis
 	erros = append(erros, "REDIS_URI")
 }
 `,
-		Imports: []string{`"{%.Module%}/pkg/redis"`},
+		Imports: []string{`"{%.Module%}/pkg/cache/redis"`},
 		Conn: `rdb, err := redis.NewRedisConn(ctx, cfg.Redis)
 if err != nil {
 	errorx.Fatal(err)
@@ -157,7 +157,7 @@ defer rdb.Close()
 		Clean: &cleanTarget{
 			Name: "cache",
 			Script: `echo "limpando cache..."; \
-sudo docker compose -f infra/compose/docker-compose.yaml --env-file .env exec -T redis \
+sudo $(COMPOSE) exec -T redis \
 	sh -c 'redis-cli -a "$$REDIS_PASSWORD" FLUSHALL'; \`,
 		},
 	},
@@ -379,5 +379,13 @@ func (s service) detectPath() []string {
 	if s.Detect != nil {
 		return s.Detect
 	}
+
+	switch s.Name {
+	case "postgres":
+		return []string{"pkg", "database", "postgres"}
+	case "redis":
+		return []string{"pkg", "cache", "redis"}
+	}
+
 	return []string{"pkg", s.Name}
 }
