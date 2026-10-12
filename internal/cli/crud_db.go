@@ -14,7 +14,35 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var crudDBs = []string{"postgres", "memory"}
+// database is a repository a crud can use; the first one is the recommended.
+type database struct {
+	Name        string
+	Description string
+	Service     string
+}
+
+var databases = []database{
+	{"postgres", "adds the postgres service, a migration and a sql repository", "postgres"},
+	{"memory", "in-memory repository: data is lost on restart, no migration (good for prototypes and tests)", ""},
+}
+
+func (d database) Label() string {
+	label := d.Name + ": " + d.Description
+	if d.Name == databases[0].Name {
+		label += " (recommended)"
+	}
+	return label
+}
+
+var crudDBs = databaseNames()
+
+func databaseNames() []string {
+	names := make([]string, 0, len(databases))
+	for _, db := range databases {
+		names = append(names, db.Name)
+	}
+	return names
+}
 
 var crudDBYes bool
 
@@ -87,20 +115,19 @@ func chooseDatabase(project *config.Project, flag string) string {
 		return "postgres"
 	}
 
-	switch choose("This project has no database. What should the crud use?", []string{
-		"add postgres",
-		"memory repository (data is lost on restart, no migration)",
-		"cancel",
-	}) {
-	case 0:
-		return "postgres"
-	case 1:
-		return "memory"
-	default:
+	options := make([]string, 0, len(databases)+1)
+	for _, db := range databases {
+		options = append(options, db.Label())
+	}
+	options = append(options, "cancel")
+
+	choice := choose("This project has no database. What should the crud use?", options)
+	if choice >= len(databases) {
 		fmt.Println("aborted")
 		os.Exit(0)
-		return ""
 	}
+
+	return databases[choice].Name
 }
 
 // prepareDatabase adds the postgres service and the migration when the crud goes to postgres.

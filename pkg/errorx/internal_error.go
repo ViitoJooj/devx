@@ -42,7 +42,7 @@ func ContainerAlreadyExists(name string) {
 	fmt.Println("code: dvx-04")
 	fmt.Println("error: container '" + name + "' already exists")
 	fmt.Println("error_type: user error.")
-	fmt.Println("message: remove internal/containers/" + name + " or choose another name")
+	fmt.Println("message: remove internal/restful/" + name + " or choose another name")
 	os.Exit(1)
 }
 
@@ -237,7 +237,7 @@ func NeedDBFlag() {
 	fmt.Println("code: dvx-29")
 	fmt.Println("error: this project has no database")
 	fmt.Println("error_type: user error.")
-	fmt.Println("message: not running interactively, pass --db postgres or --db memory")
+	fmt.Println("message: not running interactively, pass --db postgres (recommended: adds the postgres service and a migration) or --db memory (data is lost on restart)")
 	os.Exit(1)
 }
 
