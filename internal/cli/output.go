@@ -79,6 +79,6 @@ func confirm(question string, yes bool) {
 
 	if answer != "y" && answer != "yes" {
 		fmt.Println("aborted")
-		os.Exit(0)
+		errorx.Exit(0)
 	}
 }

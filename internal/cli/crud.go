@@ -6,7 +6,7 @@ import (
 
 var crudCmd = &cobra.Command{
 	Use:   "crud",
-	Short: "Manage the project cruds (internal/containers)",
+	Short: "Manage the project cruds (internal/restful)",
 }
 
 func init() {

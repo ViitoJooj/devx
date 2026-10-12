@@ -1,0 +1,23 @@
+// Package resources holds the resources the model can read.
+package resources
+
+import (
+	"context"
+
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+)
+
+// Register adds every resource to the server.
+func Register(server *mcp.Server) {
+	server.AddResource(&mcp.Resource{
+		URI:      "info://about",
+		Name:     "about",
+		MIMEType: "text/plain",
+	}, about)
+}
+
+func about(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
+	return &mcp.ReadResourceResult{
+		Contents: []*mcp.ResourceContents{{URI: req.Params.URI, MIMEType: "text/plain", Text: "{%.Name%} mcp server"}},
+	}, nil
+}

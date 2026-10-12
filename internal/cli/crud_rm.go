@@ -45,14 +45,14 @@ func crudRm(cmd *cobra.Command, args []string) {
 
 	confirm("Remove crud "+names.Plural+" from "+project.Name+"?", crudRmYes)
 
-	for _, dir := range [][]string{{"internal", "containers", names.FolderPlural}, {"hacks", "http", names.KebabPlural}} {
+	for _, dir := range [][]string{{"internal", "restful", names.FolderPlural}, {"hacks", "http", names.KebabPlural}} {
 		if err := os.RemoveAll(project.Path(dir...)); err != nil {
 			errorx.CannotGenerate(err)
 		}
 	}
 
 	if len(cruds(project)) == 0 {
-		if err := os.Remove(project.Path("pkg", "utils", "http_utils.go")); err != nil && !os.IsNotExist(err) {
+		if err := os.Remove(project.Path("internal", "shared", "utils", "http_utils.go")); err != nil && !os.IsNotExist(err) {
 			errorx.CannotGenerate(err)
 		}
 	}
@@ -71,13 +71,13 @@ func crudRm(cmd *cobra.Command, args []string) {
 		errorx.CannotGenerate(err)
 	}
 
-	fmt.Println("removed internal/containers/" + names.FolderPlural + " and hacks/http/" + names.KebabPlural)
+	fmt.Println("removed internal/restful/" + names.FolderPlural + " and hacks/http/" + names.KebabPlural)
 	fmt.Println("migrations were kept: to drop the table, create a new migration with DROP TABLE " + names.Plural)
 }
 
 func entityName(project *config.Project, names utils.Names) string {
 
-	data, err := os.ReadFile(project.Path("internal", "containers", names.FolderPlural, "entities", "entitie.go"))
+	data, err := os.ReadFile(project.Path("internal", "restful", names.FolderPlural, "entities", "entitie.go"))
 	if err != nil {
 		return names.Pascal
 	}
@@ -98,14 +98,14 @@ func isBaseServer(project *config.Project, input string) bool {
 		return false
 	}
 
-	return project.Exists("internal", "containers", "server") && !slices.Contains(cruds(project), "servers")
+	return project.Exists("internal", "restful", "server") && !slices.Contains(cruds(project), "servers")
 }
 
 func removeServer(project *config.Project) {
 
 	confirm("Remove the api container server (/v1/ping, /v1/openapi.yaml and /docs) from "+project.Name+"?", crudRmYes)
 
-	for _, dir := range [][]string{{"internal", "containers", "server"}, {"hacks", "http", "server"}} {
+	for _, dir := range [][]string{{"internal", "restful", "server"}, {"hacks", "http", "server"}} {
 		if err := os.RemoveAll(project.Path(dir...)); err != nil {
 			errorx.CannotGenerate(err)
 		}
@@ -117,7 +117,7 @@ func removeServer(project *config.Project) {
 		errorx.CannotGenerate(err)
 	}
 
-	if err := utils.RemoveSnippet(main, `"`+project.Module+`/internal/containers/server"`); err != nil {
+	if err := utils.RemoveSnippet(main, `"`+project.Module+`/internal/restful/server"`); err != nil {
 		errorx.CannotGenerate(err)
 	}
 
@@ -130,7 +130,7 @@ func removeServer(project *config.Project) {
 		errorx.CannotGenerate(err)
 	}
 
-	fmt.Println("removed internal/containers/server and hacks/http/server (/v1/ping, /v1/openapi.yaml and /docs)")
+	fmt.Println("removed internal/restful/server and hacks/http/server (/v1/ping, /v1/openapi.yaml and /docs)")
 }
 
 // serverContract reads IServerRepository from the contracts template, so the removed text always matches the generated one.

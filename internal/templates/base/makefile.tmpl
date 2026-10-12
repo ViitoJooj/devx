@@ -1,0 +1,9 @@
+include hacks/make/env.mk
+include hacks/make/dev.mk
+-include hacks/make/db.mk
+
+.PHONY: info
+info:
+	@echo "OS Detectado       : $(DETECTED_OS)"
+	@echo "Engine de Container: $(CONTAINER_ENGINE)"
+	@echo "Comando Compose    : $(COMPOSE_CMD)"

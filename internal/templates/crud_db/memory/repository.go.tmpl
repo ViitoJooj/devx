@@ -10,21 +10,9 @@ import (
 	"time"
 	"uuid"
 
-	{%.Plural%}_entities "{%.Module%}/internal/containers/{%.FolderPlural%}/entities"
+	{%.Plural%}_entities "{%.Module%}/internal/restful/{%.FolderPlural%}/entities"
 	"{%.Module%}/internal/contracts"
 )
-
-const (
-	defaultLimit = 20
-	maxLimit     = 100
-	defaultOrder = "created_at"
-)
-
-var queryColumns = map[string]bool{
-	"id":         true,
-	"updated_at": true,
-	"created_at": true,
-}
 
 type {%.PascalPlural%}Repository struct {
 	mu   *sync.RWMutex
@@ -76,27 +64,60 @@ func (r {%.PascalPlural%}Repository) List(ctx context.Context) ([]{%.Plural%}_en
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	output := r.active()
-	sortBy(output, defaultOrder, true)
+	output := make([]{%.Plural%}_entities.{%.Pascal%}, 0, len(r.data))
+	for _, item := range r.data {
+		if item.DeletedAt == nil {
+			output = append(output, item)
+		}
+	}
+
+	slices.SortFunc(output, func(a, b {%.Plural%}_entities.{%.Pascal%}) int {
+		return b.CreatedAt.Compare(a.CreatedAt)
+	})
 
 	return output, nil
 }
 
 func (r {%.PascalPlural%}Repository) Query(ctx context.Context, input contracts.QueryInput) ([]{%.Plural%}_entities.{%.Pascal%}, error) {
 
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+	const (
+		defaultLimit = 20
+		maxLimit     = 100
+		defaultOrder = "created_at"
+	)
 
-	output := make([]{%.Plural%}_entities.{%.Pascal%}, 0)
+	queryColumns := map[string]bool{
+		"id":         true,
+		"updated_at": true,
+		"created_at": true,
+	}
 
-	for _, item := range r.active() {
-		match, err := matches(item, input.Filters)
+	var (
+		filterID   *uuid.UUID
+		filterDate = map[string]time.Time{}
+	)
+
+	for key, value := range input.Filters {
+		if !queryColumns[key] {
+			return nil, fmt.Errorf("invalid filter: %s", key)
+		}
+
+		text := fmt.Sprint(value)
+
+		if key == "id" {
+			id, err := uuid.Parse(text)
+			if err != nil {
+				return nil, fmt.Errorf("invalid filter id: %w", err)
+			}
+			filterID = &id
+			continue
+		}
+
+		date, err := time.Parse(time.RFC3339Nano, text)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("invalid filter %s: %w", key, err)
 		}
-		if match {
-			output = append(output, item)
-		}
+		filterDate[key] = date
 	}
 
 	orderBy := defaultOrder
@@ -107,7 +128,45 @@ func (r {%.PascalPlural%}Repository) Query(ctx context.Context, input contracts.
 		orderBy = input.OrderBy
 	}
 
-	sortBy(output, orderBy, !strings.EqualFold(input.Order, "asc"))
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	output := make([]{%.Plural%}_entities.{%.Pascal%}, 0)
+
+	for _, item := range r.data {
+		if item.DeletedAt != nil {
+			continue
+		}
+		if filterID != nil && item.ID != *filterID {
+			continue
+		}
+		if date, ok := filterDate["created_at"]; ok && !item.CreatedAt.Equal(date) {
+			continue
+		}
+		if date, ok := filterDate["updated_at"]; ok && !item.UpdatedAt.Equal(date) {
+			continue
+		}
+
+		output = append(output, item)
+	}
+
+	desc := !strings.EqualFold(input.Order, "asc")
+
+	slices.SortFunc(output, func(a, b {%.Plural%}_entities.{%.Pascal%}) int {
+		var result int
+		switch orderBy {
+		case "id":
+			result = a.ID.Compare(b.ID)
+		case "updated_at":
+			result = a.UpdatedAt.Compare(b.UpdatedAt)
+		default:
+			result = a.CreatedAt.Compare(b.CreatedAt)
+		}
+		if desc {
+			return -result
+		}
+		return result
+	})
 
 	limit := input.Limit
 	if limit <= 0 {
@@ -151,68 +210,4 @@ func (r {%.PascalPlural%}Repository) Delete(ctx context.Context, id *uuid.UUID) 
 	r.data[*id] = item
 
 	return nil
-}
-
-func (r {%.PascalPlural%}Repository) active() []{%.Plural%}_entities.{%.Pascal%} {
-
-	output := make([]{%.Plural%}_entities.{%.Pascal%}, 0, len(r.data))
-	for _, item := range r.data {
-		if item.DeletedAt == nil {
-			output = append(output, item)
-		}
-	}
-
-	return output
-}
-
-func matches(item {%.Plural%}_entities.{%.Pascal%}, filters map[string]any) (bool, error) {
-
-	for key, value := range filters {
-		if !queryColumns[key] {
-			return false, fmt.Errorf("invalid filter: %s", key)
-		}
-
-		text := fmt.Sprint(value)
-
-		switch key {
-		case "id":
-			id, err := uuid.Parse(text)
-			if err != nil {
-				return false, fmt.Errorf("invalid filter id: %w", err)
-			}
-			if item.ID != id {
-				return false, nil
-			}
-		case "created_at", "updated_at":
-			date, err := time.Parse(time.RFC3339Nano, text)
-			if err != nil {
-				return false, fmt.Errorf("invalid filter %s: %w", key, err)
-			}
-			if !column(item, key).Equal(date) {
-				return false, nil
-			}
-		}
-	}
-
-	return true, nil
-}
-
-func column(item {%.Plural%}_entities.{%.Pascal%}, key string) time.Time {
-	if key == "updated_at" {
-		return item.UpdatedAt
-	}
-	return item.CreatedAt
-}
-
-func sortBy(items []{%.Plural%}_entities.{%.Pascal%}, key string, desc bool) {
-	slices.SortFunc(items, func(a, b {%.Plural%}_entities.{%.Pascal%}) int {
-		result := column(a, key).Compare(column(b, key))
-		if key == "id" {
-			result = a.ID.Compare(b.ID)
-		}
-		if desc {
-			return -result
-		}
-		return result
-	})
 }

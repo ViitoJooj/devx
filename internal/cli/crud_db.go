@@ -14,7 +14,35 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var crudDBs = []string{"postgres", "memory"}
+// database is a repository a crud can use; the first one is the recommended.
+type database struct {
+	Name        string
+	Description string
+	Service     string
+}
+
+var databases = []database{
+	{"postgres", "adds the postgres service, a migration and a sql repository", "postgres"},
+	{"memory", "in-memory repository: data is lost on restart, no migration (good for prototypes and tests)", ""},
+}
+
+func (d database) Label() string {
+	label := d.Name + ": " + d.Description
+	if d.Name == databases[0].Name {
+		label += " (recommended)"
+	}
+	return label
+}
+
+var crudDBs = databaseNames()
+
+func databaseNames() []string {
+	names := make([]string, 0, len(databases))
+	for _, db := range databases {
+		names = append(names, db.Name)
+	}
+	return names
+}
 
 var crudDBYes bool
 
@@ -83,24 +111,23 @@ func chooseDatabase(project *config.Project, flag string) string {
 		return flag
 	}
 
-	if project.Exists("pkg", "postgres") {
+	if project.Exists("pkg", "database", "postgres") {
 		return "postgres"
 	}
 
-	switch choose("This project has no database. What should the crud use?", []string{
-		"add postgres",
-		"memory repository (data is lost on restart, no migration)",
-		"cancel",
-	}) {
-	case 0:
-		return "postgres"
-	case 1:
-		return "memory"
-	default:
-		fmt.Println("aborted")
-		os.Exit(0)
-		return ""
+	options := make([]string, 0, len(databases)+1)
+	for _, db := range databases {
+		options = append(options, db.Label())
 	}
+	options = append(options, "cancel")
+
+	choice := choose("This project has no database. What should the crud use?", options)
+	if choice >= len(databases) {
+		fmt.Println("aborted")
+		errorx.Exit(0)
+	}
+
+	return databases[choice].Name
 }
 
 // prepareDatabase adds the postgres service and the migration when the crud goes to postgres.
@@ -110,7 +137,7 @@ func prepareDatabase(project *config.Project, names utils.Names, db string) erro
 		return nil
 	}
 
-	if !project.Exists("pkg", "postgres") {
+	if !project.Exists("pkg", "database", "postgres") {
 		if err := addService(project, services["postgres"]); err != nil {
 			return err
 		}
@@ -131,8 +158,8 @@ func renderCrudDB(project *config.Project, names utils.Names, db string, overwri
 		template string
 		dest     []string
 	}{
-		{"crud_db/" + db + "/repository.go.tmpl", []string{"internal", "containers", names.FolderPlural, "repositories", "repository.go"}},
-		{"crud/internal/containers/__plural__/initializr.go.tmpl", []string{"internal", "containers", names.FolderPlural, "initializr.go"}},
+		{"crud_db/" + db + "/repository.go.tmpl", []string{"internal", "restful", names.FolderPlural, "repositories", "repository.go"}},
+		{"crud/internal/restful/__plural__/initializr.go.tmpl", []string{"internal", "restful", names.FolderPlural, "initializr.go"}},
 	}
 
 	for _, file := range files {
@@ -209,7 +236,7 @@ func hasMigration(project *config.Project, names utils.Names) bool {
 
 func crudDatabase(project *config.Project, folder string) string {
 
-	data, err := os.ReadFile(project.Path("internal", "containers", folder, "repositories", "repository.go"))
+	data, err := os.ReadFile(project.Path("internal", "restful", folder, "repositories", "repository.go"))
 	if err == nil && strings.Contains(string(data), `"database/sql"`) {
 		return "postgres"
 	}

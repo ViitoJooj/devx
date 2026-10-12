@@ -3,11 +3,11 @@ package rabbitmq
 import (
 	"context"
 
-	"{%.Module%}/pkg/dotenv"
+	"{%.Module%}/internal/config"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func NewRabbitMQConn(ctx context.Context, cfg dotenv.RabbitMQ) (*amqp.Connection, error) {
+func NewRabbitMQConn(ctx context.Context, cfg config.RabbitMQ) (*amqp.Connection, error) {
 
 	conn, err := amqp.Dial(cfg.Uri)
 	if err != nil {

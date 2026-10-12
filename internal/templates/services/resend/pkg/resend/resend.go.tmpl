@@ -3,7 +3,7 @@ package resend
 import (
 	"context"
 
-	"{%.Module%}/pkg/dotenv"
+	"{%.Module%}/internal/config"
 	"github.com/resend/resend-go/v3"
 )
 
@@ -12,7 +12,7 @@ type Client struct {
 	from   string
 }
 
-func NewResendClient(cfg dotenv.Resend) *Client {
+func NewResendClient(cfg config.Resend) *Client {
 	return &Client{
 		client: resend.NewClient(cfg.ApiKey),
 		from:   cfg.From,

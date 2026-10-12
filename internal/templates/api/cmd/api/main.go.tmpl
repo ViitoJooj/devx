@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 
-	"{%.Module%}/internal/containers/server"
-	"{%.Module%}/pkg/dotenv"
-	"{%.Module%}/pkg/errorx"
-	"{%.Module%}/pkg/httpx"
+	"{%.Module%}/internal/restful/server"
+	"{%.Module%}/internal/config"
+	"{%.Module%}/internal/shared/errorx"
+	"{%.Module%}/internal/shared/httpx"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,7 +19,7 @@ func main() {
 
 	defer cancel()
 
-	cfg, err := dotenv.NewDotenv(ctx)
+	cfg, err := config.New(ctx)
 	if err != nil {
 		errorx.Fatal(err)
 	}

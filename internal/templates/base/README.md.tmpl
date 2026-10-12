@@ -1,6 +1,6 @@
 # {%.Name%}
-Projeto gerado pelo devx. Veja os apps do projeto com `devx app ls`.
-
+Projeto gerado pelo devx.{%if not .Standalone%} Veja os apps do projeto com `devx app ls`.{%end%}
+{%if .API%}
 ## API (cmd/api)
 ```sh
 make run-dev
@@ -10,10 +10,25 @@ devx worker add cleanup --interval 30m
 devx view add sveltekit
 ```
 Docs da API em http://localhost:8080/docs
-
-## CLI (cmd/cli)
+{%end%}{%if .CLI%}
+## CLI{%if not .Standalone%} (cmd/cli){%end%}
 ```sh
 devx command add hello
 make run-cli ARGS="hello"
 make build-cli
 ```
+{%end%}{%if .MCP%}
+## MCP
+Servidor MCP por stdio. Ferramentas em `internal/tools`, recursos em `internal/resources`.
+```sh
+make run-mcp
+make build-mcp
+```
+{%end%}{%if .Jobs%}
+## Jobs
+Tarefas em `internal/jobs`, agendamentos cron em `internal/schedules`.
+```sh
+make run-jobs
+make build-jobs
+```
+{%end%}

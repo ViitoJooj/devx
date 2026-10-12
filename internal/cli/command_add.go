@@ -42,14 +42,7 @@ func commandAdd(cmd *cobra.Command, args []string) {
 		errorx.CannotGenerate(err)
 	}
 
-	root := rootFile(project)
-
-	if rootContains(project, "rootCmd.AddCommand(") {
-		err = utils.InsertGo(root, callArgAnchor("rootCmd.AddCommand"), commandRegister(names))
-	} else {
-		err = utils.InsertGo(root, beforeStmtAnchor("Execute", "if err := rootCmd.Execute()"), "rootCmd.AddCommand(\n\t"+commandRegister(names)+"\n)\n\n")
-	}
-	if err != nil {
+	if err := registerCommand(project, names); err != nil {
 		errorx.CannotGenerate(err)
 	}
 

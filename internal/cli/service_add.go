@@ -36,13 +36,21 @@ func serviceAdd(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	var fetches []utils.Fetch
+	for _, name := range args {
+		for _, dep := range services[name].Deps {
+			fetches = append(fetches, utils.Fetch{Path: dep})
+		}
+	}
+	defer utils.Prefetch(fetches...)()
+
 	for _, name := range args {
 		if err := addService(project, services[name]); err != nil {
 			errorx.CannotGenerate(err)
 		}
 	}
 
-	if err := utils.RunGo(project.Root, "mod", "tidy"); err != nil {
+	if err := utils.Step("go mod tidy", func() error { return utils.RunGo(project.Root, "mod", "tidy") }); err != nil {
 		errorx.CannotRunGo(err)
 	}
 }
@@ -78,7 +86,7 @@ func addService(project *config.Project, svc service) error {
 
 	steps := []func() error{
 		func() error { return addEnv(project, svc, data) },
-		func() error { return addDotenv(project, svc) },
+		func() error { return addConfig(project, svc) },
 		func() error { return addMain(project, svc, data) },
 		func() error { return addCompose(project, svc, data) },
 		func() error { return wireDocker(project, svc) },
@@ -119,13 +127,13 @@ func addEnv(project *config.Project, svc service, data templateData) error {
 	return utils.AppendFile(project.Path(".env.example"), envValue.ReplaceAllString(env, "$1="))
 }
 
-func addDotenv(project *config.Project, svc service) error {
+func addConfig(project *config.Project, svc service) error {
 
 	if svc.CfgField == "" {
 		return nil
 	}
 
-	path := project.Path("pkg", "dotenv", "dotenv.go")
+	path := project.Path("internal", "config", "config.go")
 
 	injections := []struct {
 		anchor  utils.Anchor

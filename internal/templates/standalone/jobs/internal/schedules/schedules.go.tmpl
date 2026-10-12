@@ -1,0 +1,17 @@
+// Package schedules holds the cron schedule of every job.
+package schedules
+
+import (
+	"{%.Module%}/internal/jobs"
+	"github.com/robfig/cron/v3"
+)
+
+// Register adds every job to the runner with its cron spec.
+func Register(runner *cron.Cron) error {
+
+	if _, err := runner.AddFunc("@every 1m", jobs.Heartbeat); err != nil {
+		return err
+	}
+
+	return nil
+}

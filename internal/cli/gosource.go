@@ -99,9 +99,9 @@ func cfgFieldAnchor(g *utils.GoFile) (int, string, error) {
 
 func cfgTypeAnchor(g *utils.GoFile) (int, string, error) {
 
-	fn := g.Func("NewDotenv")
+	fn := g.Func("New")
 	if fn == nil {
-		return 0, "", anchorError(g, "func NewDotenv")
+		return 0, "", anchorError(g, "func New")
 	}
 
 	return g.Line(fn.Pos()), "", nil

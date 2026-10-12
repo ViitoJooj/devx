@@ -1,0 +1,9 @@
+// Package tools holds the tools the model can call.
+package tools
+
+import "github.com/modelcontextprotocol/go-sdk/mcp"
+
+// Register adds every tool to the server.
+func Register(server *mcp.Server) {
+	addPing(server)
+}

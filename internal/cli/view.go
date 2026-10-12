@@ -23,13 +23,13 @@ const corsSnippet = `api.Use(httpx.Cors(cfg.Application.FrontendURL))
 
 func addCors(project *config.Project) error {
 
-	if project.Exists("pkg", "httpx", "cors.go") {
+	if project.Exists("internal", "shared", "httpx", "cors.go") {
 		return nil
 	}
 
 	_, err := utils.RenderDir(utils.RenderInput{
 		Source:       "views",
-		Destination:  project.Path("pkg", "httpx"),
+		Destination:  project.Path("internal", "shared", "httpx"),
 		Data:         projectData(project),
 		SkipExisting: true,
 	})
@@ -50,27 +50,9 @@ func removeCors(project *config.Project) error {
 		return err
 	}
 
-	if err := os.Remove(project.Path("pkg", "httpx", "cors.go")); err != nil && !os.IsNotExist(err) {
+	if err := os.Remove(project.Path("internal", "shared", "httpx", "cors.go")); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
 	return nil
-}
-
-func excludeWwwFromAir(project *config.Project) error {
-
-	path := project.Path(".air.toml")
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil
-	}
-
-	content := string(data)
-	if strings.Contains(content, `"www"`) {
-		return nil
-	}
-
-	content = strings.Replace(content, "exclude_dir = [", `exclude_dir = ["www", `, 1)
-	return os.WriteFile(path, []byte(content), 0o644)
 }

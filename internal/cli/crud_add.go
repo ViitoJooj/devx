@@ -2,8 +2,11 @@ package cli
 
 import (
 	"fmt"
+	"go/token"
+	"go/types"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 
 	"github.com/ViitoJooj/devx/internal/cli/config"
@@ -40,13 +43,17 @@ func crudAdd(cmd *cobra.Command, args []string) {
 		errorx.InvalidName(args[0])
 	}
 
-	if project.Exists("internal", "containers", names.FolderPlural) {
+	if reservedCrud(names) {
+		errorx.ReservedName(names.Plural)
+	}
+
+	if project.Exists("internal", "restful", names.FolderPlural) {
 		errorx.ContainerAlreadyExists(names.FolderPlural)
 	}
 
 	db := chooseDatabase(project, crudAddDB)
 
-	if db == "postgres" && !project.Exists("pkg", "postgres") {
+	if db == "postgres" && !project.Exists("pkg", "database", "postgres") {
 		fmt.Println("adding postgres")
 		if err := addService(project, services["postgres"]); err != nil {
 			errorx.CannotGenerate(err)
@@ -97,7 +104,7 @@ func crudAdd(cmd *cobra.Command, args []string) {
 		errorx.CannotGenerate(err)
 	}
 
-	if err := utils.RunGo(project.Root, "mod", "tidy"); err != nil {
+	if err := utils.Step("go mod tidy", func() error { return utils.RunGo(project.Root, "mod", "tidy") }); err != nil {
 		errorx.CannotRunGo(err)
 	}
 
@@ -128,7 +135,7 @@ func addContainerToMain(project *config.Project, names utils.Names, db string) e
 }
 
 func containerImport(project *config.Project, names utils.Names) string {
-	return names.Plural + ` "` + project.Module + "/internal/containers/" + names.FolderPlural + `"`
+	return names.Plural + ` "` + project.Module + "/internal/restful/" + names.FolderPlural + `"`
 }
 
 func containerInit(names utils.Names, db string) string {
@@ -166,4 +173,22 @@ func nextMigrationNumber(project *config.Project) (int, error) {
 	}
 
 	return last + 1, nil
+}
+
+// mainIdentifiers are the names already used in cmd/api/main.go (imports and variables); a container is imported there as its plural.
+var mainIdentifiers = []string{
+	"api", "cfg", "ctx", "cancel", "err", "gin", "context", "server", "config", "errorx", "httpx",
+	"workers", "migration", "postgres", "redis", "rabbitmq", "resend", "stripe", "prometheus", "cors", "main",
+}
+
+// reservedCrud is a crud whose import in main.go would clash with something already there, or is not a valid go identifier.
+func reservedCrud(names utils.Names) bool {
+
+	for _, name := range []string{names.Plural, names.Singular} {
+		if token.IsKeyword(name) || types.Universe.Lookup(name) != nil || slices.Contains(mainIdentifiers, name) {
+			return true
+		}
+	}
+
+	return false
 }
