@@ -3,52 +3,18 @@ package utils
 import (
 	"fmt"
 	"os"
+	"time"
 
-	"github.com/ViitoJooj/devx/pkg/errorx"
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
 	"golang.org/x/term"
 )
 
-type stepDone struct{ err error }
+var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 
-type stepModel struct {
-	spinner spinner.Model
-	label   string
-	err     error
-	done    bool
-}
-
-func (m stepModel) Init() tea.Cmd { return m.spinner.Tick }
-
-func (m stepModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case stepDone:
-		m.done, m.err = true, msg.err
-		return m, tea.Quit
-	case tea.KeyMsg:
-		if msg.String() == "ctrl+c" {
-			return m, tea.Sequence(tea.Quit, func() tea.Msg { errorx.Exit(130); return nil })
-		}
-	}
-
-	var cmd tea.Cmd
-	m.spinner, cmd = m.spinner.Update(msg)
-	return m, cmd
-}
-
-func (m stepModel) View() string {
-	switch {
-	case !m.done:
-		return m.spinner.View() + " " + m.label + "\n"
-	case m.err != nil:
-		return "✗ " + m.label + "\n"
-	}
-	return "✓ " + m.label + "\n"
-}
+const clearLine = "\r\x1b[K"
 
 // Step runs fn while showing a spinner with label, and leaves a ✓ or ✗ line behind.
 // Without a terminal (CI, pipes) it prints plain lines instead of the animation.
+// The spinner only writes to stdout: stdin and the terminal mode are not touched.
 func Step(label string, fn func() error) error {
 
 	if !term.IsTerminal(int(os.Stdout.Fd())) {
@@ -61,15 +27,24 @@ func Step(label string, fn func() error) error {
 		return nil
 	}
 
-	s := spinner.New(spinner.WithSpinner(spinner.Dot))
-	program := tea.NewProgram(stepModel{spinner: s, label: label})
+	done := make(chan error, 1)
+	go func() { done <- fn() }()
 
-	go func() { program.Send(stepDone{err: fn()}) }()
+	ticker := time.NewTicker(80 * time.Millisecond)
+	defer ticker.Stop()
 
-	final, err := program.Run()
-	if err != nil {
-		return err
+	for frame := 0; ; frame++ {
+		fmt.Print(clearLine + spinnerFrames[frame%len(spinnerFrames)] + " " + label)
+
+		select {
+		case err := <-done:
+			mark := "✓"
+			if err != nil {
+				mark = "✗"
+			}
+			fmt.Println(clearLine + mark + " " + label)
+			return err
+		case <-ticker.C:
+		}
 	}
-
-	return final.(stepModel).err
 }
