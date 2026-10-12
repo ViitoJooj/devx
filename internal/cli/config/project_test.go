@@ -50,3 +50,18 @@ func TestAppDetection(t *testing.T) {
 		})
 	}
 }
+
+func TestFindRoot(t *testing.T) {
+	root := t.TempDir()
+	touch(t, root, "go.mod")
+	touch(t, root, "internal", "restful", "users", "x.go")
+
+	got, err := FindRoot(filepath.Join(root, "internal", "restful", "users"))
+	if err != nil || got != root {
+		t.Fatalf("FindRoot() = %q, %v; want %q", got, err, root)
+	}
+
+	if _, err := FindRoot(t.TempDir()); err == nil {
+		t.Fatal("FindRoot() without go.mod should fail")
+	}
+}

@@ -57,6 +57,11 @@ devx view ls [--json]
   (`config.New`), `internal/shared/{errorx,httpx,logs,utils}`, `internal/workers`, e os drivers em `pkg/database/postgres`
   (+ `migration`), `pkg/cache/redis`, `pkg/rabbitmq`, `pkg/resend`, `pkg/stripe`. Projetos antigos (`internal/containers`,
   `pkg/dotenv`...) recebem um aviso nos comandos e migram com `devx migrate`.
+- Os comandos funcionam de qualquer subpasta do projeto (procuram o `go.mod` subindo as pastas) e usam `.devx.lock` na raiz
+  para não rodar dois ao mesmo tempo (o segundo espera; um lock com mais de 5 minutos é considerado de uma execução que morreu).
+- `crud add` recusa nomes que colidem com o `main.go` ou com o Go (`worker`, `redis`, `type`...); `command add` aceita quase tudo
+  (`init`, `type`, `main`), só recusa `root`, `register`, `help`, `completion` e `version`.
+- Testes: `go test ./...` (rápidos) e `go test -tags e2e -timeout 20m ./internal/cli/` (gera e compila projetos de verdade; precisa de go e rede/cache).
 - O make fica em `hacks/make/`: o `makefile` só tem os `include` e o `info` (edite à vontade),
   `env.mk` detecta OS e docker/podman (`$(COMPOSE)`), `dev.mk` e `db.mk` (sudo-clean) são gerados pelo devx.
   Projetos antigos migram sozinhos no próximo `service add`/`app add`; regras escritas à mão ficam no `makefile`.

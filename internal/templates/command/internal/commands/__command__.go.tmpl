@@ -9,9 +9,9 @@ import (
 var {%.Camel%}Cmd = &cobra.Command{
 	Use:   "{%.Kebab%}",
 	Short: "{%.Kebab%} command",
-	Run:   {%.Camel%},
+	Run:   run{%.Pascal%},
 }
 
-func {%.Camel%}(cmd *cobra.Command, args []string) {
+func run{%.Pascal%}(cmd *cobra.Command, args []string) {
 	fmt.Println("{%.Kebab%} called")
 }

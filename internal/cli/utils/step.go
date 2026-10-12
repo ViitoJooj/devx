@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ViitoJooj/devx/pkg/errorx"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"golang.org/x/term"
@@ -27,7 +28,7 @@ func (m stepModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	case tea.KeyMsg:
 		if msg.String() == "ctrl+c" {
-			return m, tea.Sequence(tea.Quit, func() tea.Msg { os.Exit(130); return nil })
+			return m, tea.Sequence(tea.Quit, func() tea.Msg { errorx.Exit(130); return nil })
 		}
 	}
 

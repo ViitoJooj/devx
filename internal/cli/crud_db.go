@@ -124,7 +124,7 @@ func chooseDatabase(project *config.Project, flag string) string {
 	choice := choose("This project has no database. What should the crud use?", options)
 	if choice >= len(databases) {
 		fmt.Println("aborted")
-		os.Exit(0)
+		errorx.Exit(0)
 	}
 
 	return databases[choice].Name

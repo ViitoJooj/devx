@@ -28,6 +28,10 @@ func loadProject() *config.Project {
 		errorx.NotInProject()
 	}
 
+	if err := utils.LockProject(project.Root); err != nil {
+		errorx.ProjectLocked()
+	}
+
 	if isLegacyLayout(project) {
 		errorx.LegacyLayout()
 	}

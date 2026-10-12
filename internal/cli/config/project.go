@@ -20,7 +20,12 @@ type Project struct {
 
 func LoadProject() (*Project, error) {
 
-	root, err := os.Getwd()
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	root, err := FindRoot(cwd)
 	if err != nil {
 		return nil, err
 	}
@@ -46,6 +51,22 @@ func LoadProject() (*Project, error) {
 	}
 
 	return project, nil
+}
+
+// FindRoot walks up from dir to the closest folder with a go.mod, so devx works from any subfolder of the project.
+func FindRoot(dir string) (string, error) {
+
+	for current := dir; ; {
+		if _, err := os.Stat(filepath.Join(current, "go.mod")); err == nil {
+			return current, nil
+		}
+
+		parent := filepath.Dir(current)
+		if parent == current {
+			return "", errors.New("go.mod not found")
+		}
+		current = parent
+	}
 }
 
 func (p *Project) HasAPI() bool {

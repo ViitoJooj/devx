@@ -42,6 +42,10 @@ func migrate(cmd *cobra.Command, args []string) {
 		errorx.NotInProject()
 	}
 
+	if err := utils.LockProject(project.Root); err != nil {
+		errorx.ProjectLocked()
+	}
+
 	if !isLegacyLayout(project) {
 		fmt.Println("project already uses the current layout")
 		return

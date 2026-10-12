@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"go/token"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -27,10 +26,12 @@ var (
 	commandShort = regexp.MustCompile(`Short:\s*"([^"]*)"`)
 )
 
-var reservedCommands = []string{"root", "init", "main", "execute", "help", "completion", "version", "register"}
+// reservedCommands are the names that clash with files devx owns (root.go, register.go) or with the commands cobra adds itself.
+// The command var is <name>Cmd and its handler run<Name>, so go keywords and init/main are fine.
+var reservedCommands = []string{"root", "register", "help", "completion", "version"}
 
 func reservedCommand(names utils.Names) bool {
-	return slices.Contains(reservedCommands, names.Singular) || token.IsKeyword(names.Camel)
+	return slices.Contains(reservedCommands, names.Singular)
 }
 
 func commandFile(project *config.Project, names utils.Names) string {
