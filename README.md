@@ -70,7 +70,7 @@ devx view ls [--json]
 - `service add grafana` adiciona o prometheus; `service add prometheus` injeta o middleware do gin e expõe `/metrics`.
 - `service add resend` / `stripe` não criam conexão no `main.go`: use `resend.NewResendClient(cfg.Resend)` / `stripe.NewStripeClient(cfg.Stripe)` onde precisar.
 - `service add docker`: gera `Dockerfile` e `.dockerignore` e coloca a API no compose no profile `app`.
-  `make run-dev` continua subindo só a infra + air; `make run-docker` sobe tudo em container.
+  `make run-dev` continua subindo só a infra + `go run ./cmd/api`; `make run-docker` sobe tudo em container.
 - `service rm` recusa remover o que ainda está em uso (postgres com cruds em postgres, prometheus com grafana).
 - Postgres com privilégio mínimo: a API conecta com `POSTGRES_URI` (usuário `<projeto>_app`: só SELECT/INSERT/UPDATE,
   sem DELETE/TRUNCATE/DROP/ALTER/CREATE e sem acesso a `schema_migrations`); as migrations rodam com

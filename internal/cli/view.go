@@ -56,21 +56,3 @@ func removeCors(project *config.Project) error {
 
 	return nil
 }
-
-func excludeWwwFromAir(project *config.Project) error {
-
-	path := project.Path(".air.toml")
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil
-	}
-
-	content := string(data)
-	if strings.Contains(content, `"www"`) {
-		return nil
-	}
-
-	content = strings.Replace(content, "exclude_dir = [", `exclude_dir = ["www", `, 1)
-	return os.WriteFile(path, []byte(content), 0o644)
-}

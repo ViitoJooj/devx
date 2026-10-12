@@ -88,10 +88,6 @@ func viewAdd(cmd *cobra.Command, args []string) {
 		errorx.CannotGenerate(err)
 	}
 
-	if err := excludeWwwFromAir(project); err != nil {
-		errorx.CannotGenerate(err)
-	}
-
 	if err := syncMakefile(project); err != nil {
 		errorx.CannotGenerate(err)
 	}

@@ -9,7 +9,6 @@ import (
 // Fetch is a module to download into the module cache before the project asks for it.
 type Fetch struct {
 	Path string
-	Tool bool
 }
 
 // Prefetch downloads every module at the same time, each in its own scratch module, so the go get and the go mod tidy
@@ -42,12 +41,7 @@ func prefetchOne(fetch Fetch) {
 		return
 	}
 
-	args := []string{"get"}
-	if fetch.Tool {
-		args = append(args, "-tool")
-	}
-
-	get := exec.Command("go", append(args, fetch.Path)...)
+	get := exec.Command("go", "get", fetch.Path)
 	get.Dir, get.Env = dir, env
 	get.Run()
 }

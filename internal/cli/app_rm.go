@@ -35,7 +35,7 @@ var appPaths = map[string][]string{
 	"api": {
 		"cmd/api", "internal/restful", "internal/contracts", "internal/workers", "internal/config",
 		"docs/openapi", "hacks/http", "infra", "www",
-		".air.toml", ".env", ".env.example", "Dockerfile", ".dockerignore",
+		".env", ".env.example", "Dockerfile", ".dockerignore",
 		"internal/shared/httpx", "internal/shared/logs", "internal/shared/utils", "internal/shared/errorx/runtimeErrors.go",
 		"pkg/database", "pkg/cache", "pkg/rabbitmq", "pkg/resend", "pkg/stripe",
 	},

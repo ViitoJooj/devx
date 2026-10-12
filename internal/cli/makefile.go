@@ -213,13 +213,13 @@ func apiRules(project *config.Project) []makeRule {
 	if len(viewTargets) > 0 {
 		runDev += "\n\t$(MAKE) -j run-api " + strings.Join(viewTargets, " ")
 	} else {
-		runDev += "\n\tgo tool air"
+		runDev += "\n\tgo run ./cmd/api"
 	}
 
 	rules := []makeRule{{"run-dev", runDev}}
 
 	if len(viewTargets) > 0 {
-		rules = append(rules, makeRule{"run-api", "run-api:\n\tgo tool air"})
+		rules = append(rules, makeRule{"run-api", "run-api:\n\tgo run ./cmd/api"})
 	}
 
 	rules = append(rules, makeRule{"run-build", "run-build:\n\tgo build -o ./tmp/main ./cmd/api"})

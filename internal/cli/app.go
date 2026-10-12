@@ -16,16 +16,14 @@ func init() {
 }
 
 type app struct {
-	Name  string
-	Tools []string
-	Deps  []string
+	Name string
+	Deps []string
 }
 
 var apps = map[string]app{
 	"api": {
-		Name:  "api",
-		Tools: []string{"github.com/air-verse/air@latest"},
-		Deps:  []string{"github.com/gin-gonic/gin", "github.com/joho/godotenv"},
+		Name: "api",
+		Deps: []string{"github.com/gin-gonic/gin", "github.com/joho/godotenv"},
 	},
 	"cli": {
 		Name: "cli",
@@ -45,9 +43,6 @@ func appFetches(kinds ...string) []utils.Fetch {
 
 	var fetches []utils.Fetch
 	for _, kind := range kinds {
-		for _, tool := range apps[kind].Tools {
-			fetches = append(fetches, utils.Fetch{Path: tool, Tool: true})
-		}
 		for _, dep := range apps[kind].Deps {
 			fetches = append(fetches, utils.Fetch{Path: dep})
 		}
@@ -77,12 +72,6 @@ func installApp(root string, data templateData, a app) error {
 	project := &config.Project{Root: root, Module: data.Module, Name: data.Name}
 	if err := syncMakefile(project); err != nil {
 		return err
-	}
-
-	if len(a.Tools) > 0 {
-		if err := utils.RunGo(root, append([]string{"get", "-tool"}, a.Tools...)...); err != nil {
-			return err
-		}
 	}
 
 	if len(a.Deps) > 0 {
